@@ -1,21 +1,74 @@
-# React + TypeScript + Vite
+# JS Notebook
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, interactive JavaScript notebook environment built with React and TypeScript - think Jupyter Notebook but for JavaScript!
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Interactive Code Execution**: Write and execute JavaScript/TypeScript code in isolated cells
+- **Rich Markdown Support**: Create beautiful documentation with Markdown cells
+- **Live Preview**: See your results instantly as you type
+- **Code Editor Features**:
+  - Syntax highlighting
+  - Auto-completion
+  - Error highlighting
+  - Code formatting
 
-## React Compiler
+## Why JS Notebook?
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+Just as Python has Jupyter Notebook and Google Colab for interactive computing, JS Notebook brings the same powerful concept to JavaScript development. Whether you're:
 
-Note: This will impact Vite dev & build performances.
+- Learning JavaScript/TypeScript
+- Prototyping code
+- Creating interactive documentation
+- Teaching programming concepts
+- Experimenting with data visualization
 
-## Expanding the ESLint configuration
+JS Notebook provides an ideal environment for interactive JavaScript development.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Getting Started
+
+```bash
+# Clone the repository
+git clone https://github.com/Madhu003/JS-Notebook.git
+
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
+```
+
+## 💡 Usage
+
+1. Create new cells by clicking the '+' button
+2. Choose between code and markdown cells
+3. Write JavaScript/TypeScript code or Markdown content
+4. Execute code cells to see results immediately
+5. Save your notebook for later use
+
+## 🛠️ Built With
+
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- Monaco Editor (Same editor as VS Code)
+
+## Contributing
+
+Contributions are welcome! Feel free to:
+
+1. Fork the repository
+2. Create your feature branch
+3. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+Made with ❤️ by [Madhu003](https://github.com/Madhu003)
 
 ```js
 export default defineConfig([
