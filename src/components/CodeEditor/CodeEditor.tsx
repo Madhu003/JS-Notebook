@@ -1,48 +1,92 @@
 import { useEffect, useRef } from 'react';
 import * as monaco from 'monaco-editor';
 import type { CodeEditorProps } from '../../types';
-import { EDITOR_CONFIG } from '../../types';
+import './CodeEditor.css';
 
-const CodeEditor = ({ value, onChange, language = 'javascript' }: CodeEditorProps): JSX.Element => {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const monacoEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+const CodeEditor = ({ 
+  value, 
+  onChange, 
+  language = 'javascript' 
+}: CodeEditorProps): JSX.Element => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
   useEffect(() => {
-    if (editorRef.current) {
-      // Initialize Monaco editor
-      monacoEditorRef.current = monaco.editor.create(editorRef.current, {
-        ...EDITOR_CONFIG,
-        value,
-        language,
-      });
+    if (!containerRef.current) return;
 
-      // Add onChange listener
-      monacoEditorRef.current.onDidChangeModelContent(() => {
-        const newValue = monacoEditorRef.current?.getValue();
-        if (newValue !== undefined) {
-          onChange(newValue);
-        }
-      });
-    }
+    // Create editor
+    editorRef.current = monaco.editor.create(containerRef.current, {
+      value,
+      language,
+      theme: 'vs-dark',
+      fontSize: 14,
+      minimap: { enabled: false },
+      automaticLayout: true,
+      lineNumbers: 'on',
+      tabSize: 2,
+      wordWrap: 'on',
+      contextmenu: true,
+      quickSuggestions: {
+        other: true,
+        comments: true,
+        strings: true
+      },
+      renderLineHighlight: 'all',
+      scrollBeyondLastLine: false,
+      folding: true,
+      bracketPairColorization: { enabled: true },
+      formatOnPaste: true,
+      formatOnType: true,
+      suggest: {
+        showKeywords: true,
+        showSnippets: true,
+        showClasses: true,
+        showFunctions: true,
+        showConstants: true,
+        showConstructors: true,
+      }
+    });
 
+    // Set up change handler
+    const changeHandler = editorRef.current.onDidChangeModelContent(() => {
+      if (editorRef.current) {
+        onChange(editorRef.current.getValue());
+      }
+    });
+
+    // Focus the editor
+    editorRef.current.focus();
+
+    // Cleanup
     return () => {
-      if (monacoEditorRef.current) {
-        monacoEditorRef.current.dispose();
+      changeHandler.dispose();
+      if (editorRef.current) {
+        editorRef.current.dispose();
       }
     };
-  }, [language]);
+  }, []); // Empty dependency array since we handle updates separately
 
   // Update value when prop changes
   useEffect(() => {
-    if (monacoEditorRef.current && value !== monacoEditorRef.current.getValue()) {
-      monacoEditorRef.current.setValue(value);
+    if (editorRef.current && value !== editorRef.current.getValue()) {
+      editorRef.current.setValue(value);
     }
   }, [value]);
 
+  // Update language when prop changes
+  useEffect(() => {
+    if (editorRef.current) {
+      const model = editorRef.current.getModel();
+      if (model) {
+        monaco.editor.setModelLanguage(model, language);
+      }
+    }
+  }, [language]);
+
   return (
-    <div className="h-[300px] rounded-lg overflow-hidden">
+    <div className="h-[300px] rounded-lg overflow-hidden border border-gray-700">
       <div
-        ref={editorRef}
+        ref={containerRef}
         className="w-full h-full"
         data-testid="code-editor"
       />

@@ -13,6 +13,70 @@ A modern, interactive JavaScript notebook environment built with React and TypeS
   - Error highlighting
   - Code formatting
 
+## 🎯 Showcase
+
+### Code Cell Example
+
+Here's an example of a JavaScript code cell that creates a star pyramid:
+
+```javascript
+function printStarPyramid(height) {
+    for (let i = 1; i <= height; i++) {
+        // Add leading spaces
+        let spaces = ' '.repeat(height - i);
+        
+        // Add stars
+        let stars = '*'.repeat(i * 2 - 1);
+        
+        // Print the row
+        console.log(spaces + stars);
+    }
+}
+```
+
+Output:
+
+```text
+    *
+   ***
+  *****
+ *******
+*********
+```
+
+### Markdown Support
+
+The notebook supports rich Markdown formatting:
+
+- **Bold text** for emphasis
+- _Italicized text_ for subtle emphasis
+- Headers of different levels
+- Code blocks with syntax highlighting
+- Lists and tables
+- And much more!
+
+### Use Cases
+
+1. **Interactive Learning**
+   - Create interactive JavaScript tutorials
+   - Practice coding exercises
+   - Experiment with code snippets
+
+2. **Documentation**
+   - Write technical documentation with live code examples
+   - Create API usage guides
+   - Document code behavior with real outputs
+
+3. **Prototyping**
+   - Quick experimentation with new ideas
+   - Test JavaScript/TypeScript code snippets
+   - Debug complex functions with immediate feedback
+
+4. **Data Visualization**
+   - Create and test data visualization code
+   - Interactive data analysis
+   - Real-time chart and graph generation
+
 ## Why JS Notebook?
 
 Just as Python has Jupyter Notebook and Google Colab for interactive computing, JS Notebook brings the same powerful concept to JavaScript development. Whether you're:

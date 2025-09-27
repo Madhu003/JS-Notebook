@@ -1,0 +1,35 @@
+.monaco-editor {
+  padding: 10px 0;
+  height: 100%;
+}
+
+.monaco-editor .margin {
+  background-color: #1e1e1e;
+}
+
+.monaco-editor .monaco-editor-background {
+  background-color: #1e1e1e;
+}
+
+/* Better visibility for active line */
+.monaco-editor .current-line {
+  border: none !important;
+  background-color: #282828 !important;
+}
+
+/* Better visibility for selection */
+.monaco-editor .selected-text {
+  background-color: #264f78 !important;
+}
+
+/* Better visibility for cursor */
+.monaco-editor .cursor {
+  background-color: #fff;
+  border-color: #fff;
+}
+
+/* Match brackets highlighting */
+.monaco-editor .bracket-match {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid #4e4e4e;
+}

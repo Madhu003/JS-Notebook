@@ -13,7 +13,26 @@ export const EDITOR_CONFIG = {
   folding: true,
   tabSize: 2,
   wordWrap: 'on',
-  padding: { top: 10 }
+  padding: { top: 10 },
+  // Enhanced syntax highlighting settings
+  tokenization: {
+    maxTokenizationLineLength: 5000
+  },
+  // Enhanced editor features
+  bracketPairColorization: {
+    enabled: true
+  },
+  renderWhitespace: 'none',
+  guides: {
+    bracketPairs: true,
+    indentation: true
+  },
+  hover: {
+    enabled: true,
+    delay: 300
+  },
+  suggestOnTriggerCharacters: true,
+  acceptSuggestionOnEnter: 'on'
 } as const;
 
 export const MARKDOWN_EDITOR_CONFIG = {
