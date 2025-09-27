@@ -1,7 +1,23 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      'monaco-editor': 'monaco-editor/esm/vs/editor/editor.api'
+    }
+  },
+  optimizeDeps: {
+    include: ['monaco-editor/esm/vs/editor/editor.worker']
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          editor: ['monaco-editor']
+        }
+      }
+    }
+  }
 })
