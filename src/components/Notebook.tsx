@@ -1,39 +1,12 @@
 import { useState, useCallback } from 'react';
 import CodeEditor from './CodeEditor/CodeEditor';
 import MarkdownEditor from './MarkdownEditor/MarkdownEditor';
-
-// Define all possible cell types
-type CellType = 'code' | 'markdown';
-
-// Define the base cell interface
-interface BaseCell {
-  id: string;
-  content: string;
-  type: CellType;
-}
-
-// Define specific cell types
-interface CodeCell extends BaseCell {
-  type: 'code';
-  output?: string;
-  error?: string;
-}
-
-interface MarkdownCell extends BaseCell {
-  type: 'markdown';
-}
-
-// Union type for all cell types
-type Cell = CodeCell | MarkdownCell;
-
-// Type guard to check if a cell is a code cell
-const isCodeCell = (cell: Cell): cell is CodeCell => {
-  return cell.type === 'code';
-};
+import type { Cell } from '../types';
+import { CellType, isCodeCell } from '../types';
 
 const Notebook = (): JSX.Element => {
   const [cells, setCells] = useState<Cell[]>([
-    { id: '1', content: '', type: 'code' as const }
+    { id: '1', content: '', type: CellType.Code }
   ]);
 
   const addCell = useCallback((type: CellType): void => {
@@ -109,14 +82,14 @@ const Notebook = (): JSX.Element => {
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => addCell('code')}
+            onClick={() => addCell(CellType.Code)}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
           >
             + Code Cell
           </button>
           <button
             type="button"
-            onClick={() => addCell('markdown')}
+            onClick={() => addCell(CellType.Markdown)}
             className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
           >
             + Markdown Cell

@@ -1,11 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as monaco from 'monaco-editor';
-
-interface CodeEditorProps {
-  value: string;
-  onChange: (value: string) => void;
-  language?: string;
-}
+import type { CodeEditorProps } from '../../types';
+import { EDITOR_CONFIG } from '../../types';
 
 const CodeEditor = ({ value, onChange, language = 'javascript' }: CodeEditorProps): JSX.Element => {
   const editorRef = useRef<HTMLDivElement>(null);
@@ -15,21 +11,9 @@ const CodeEditor = ({ value, onChange, language = 'javascript' }: CodeEditorProp
     if (editorRef.current) {
       // Initialize Monaco editor
       monacoEditorRef.current = monaco.editor.create(editorRef.current, {
+        ...EDITOR_CONFIG,
         value,
         language,
-        theme: 'vs-dark',
-        minimap: { enabled: false },
-        automaticLayout: true,
-        fontSize: 14,
-        lineNumbers: 'on',
-        scrollBeyondLastLine: false,
-        roundedSelection: false,
-        renderLineHighlight: 'line',
-        occurrencesHighlight: 'off',
-        folding: true,
-        tabSize: 2,
-        wordWrap: 'on',
-        padding: { top: 10 },
       });
 
       // Add onChange listener
