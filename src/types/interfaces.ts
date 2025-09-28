@@ -10,6 +10,7 @@ export interface BaseCell {
 // Code cell interface
 export interface CodeCell extends BaseCell {
   type: CellType.Code;
+  language?: string;
   output?: string;
   error?: string;
 }
@@ -30,6 +31,8 @@ export interface BaseEditorProps {
 
 export interface CodeEditorProps extends BaseEditorProps {
   language?: string;
+  onLanguageChange?: (language: string) => void;
+  showLanguageSelector?: boolean;
 }
 
 export interface MarkdownEditorProps extends BaseEditorProps {}

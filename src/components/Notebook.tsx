@@ -3,10 +3,11 @@ import CodeEditor from './CodeEditor/CodeEditor';
 import MarkdownEditor from './MarkdownEditor/MarkdownEditor';
 import type { Cell } from '../types';
 import { CellType, isCodeCell } from '../types';
+import { DEFAULT_LANGUAGE, getLanguageConfig } from '../constants/languages';
 
 const Notebook = (): JSX.Element => {
   const [cells, setCells] = useState<Cell[]>([
-    { id: '1', content: '', type: CellType.Code }
+    { id: '1', content: '', type: CellType.Code, language: DEFAULT_LANGUAGE }
   ]);
 
   const addCell = useCallback((type: CellType): void => {
@@ -14,7 +15,7 @@ const Notebook = (): JSX.Element => {
       id: Date.now().toString(),
       content: '',
       type,
-      ...(type === 'code' ? {} : {})
+      ...(type === CellType.Code ? { language: DEFAULT_LANGUAGE } : {})
     };
     setCells(prevCells => [...prevCells, newCell]);
   }, []);
@@ -31,7 +32,39 @@ const Notebook = (): JSX.Element => {
     );
   }, []);
 
-  const runCode = useCallback((cell: Cell): void => {
+  const handleLanguageChange = useCallback((cellId: string, newLanguage: string): void => {
+    setCells(prevCells =>
+      prevCells.map(cell => {
+        if (cell.id !== cellId) return cell;
+        if (!isCodeCell(cell)) return cell;
+        const isEmpty = cell.content.trim().length === 0;
+        const boiler = getLanguageConfig(newLanguage).boilerplate;
+        return {
+          ...cell,
+          language: newLanguage,
+          content: isEmpty ? boiler : cell.content,
+        };
+      })
+    );
+  }, []);
+
+  // Lazy-load Babel Standalone from CDN if not present
+  const loadBabel = async (): Promise<any> => {
+    if (typeof window !== 'undefined' && (window as unknown as { Babel?: any }).Babel) {
+      return (window as unknown as { Babel: any }).Babel;
+    }
+    await new Promise<void>((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/@babel/standalone/babel.min.js';
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load Babel'));
+      document.head.appendChild(script);
+    });
+    return (window as unknown as { Babel: any }).Babel;
+  };
+
+  const runCode = useCallback(async (cell: Cell): Promise<void> => {
     if (!isCodeCell(cell)) return;
 
     try {
@@ -45,8 +78,23 @@ const Notebook = (): JSX.Element => {
       };
       console.log = customLog;
 
-      // Evaluate the code
-      const result = eval(cell.content);
+      let executableCode = cell.content;
+      // Transpile TypeScript to ES5 if needed (skip React/JSX for now)
+      if (cell.language === 'typescript') {
+        const Babel = await loadBabel();
+        const transformed = Babel.transform(executableCode, {
+          filename: 'cell.ts',
+          presets: [
+            ['env', { targets: { esmodules: false } }],
+            'typescript'
+          ],
+          sourceType: 'script'
+        });
+        executableCode = transformed.code;
+      }
+
+      // Evaluate the code (after optional transpile)
+      const result = eval(executableCode);
 
       // Restore original console.log
       console.log = originalConsoleLog;
@@ -113,7 +161,7 @@ const Notebook = (): JSX.Element => {
                 {cell.type === 'code' && (
                   <button 
                     type="button"
-                    onClick={() => runCode(cell)}
+                    onClick={() => { void runCode(cell); }}
                     className="text-sm text-gray-500 hover:text-gray-700 bg-white px-3 py-1 rounded border border-gray-300 hover:bg-gray-50"
                   >
                     Run
@@ -135,9 +183,15 @@ const Notebook = (): JSX.Element => {
                   <CodeEditor
                     value={cell.content}
                     onChange={(value) => handleContentChange(cell.id, value)}
-                    language="javascript"
+                    language={isCodeCell(cell) ? (cell.language || DEFAULT_LANGUAGE) : undefined}
+                    onLanguageChange={(lang) => handleLanguageChange(cell.id, lang)}
                   />
-                  <div className="text-xs text-gray-500 mt-1">JavaScript Editor</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {(() => {
+                      const cfg = getLanguageConfig(isCodeCell(cell) ? (cell.language || DEFAULT_LANGUAGE) : DEFAULT_LANGUAGE);
+                      return `${cfg.name} Editor`;
+                    })()}
+                  </div>
                 </div>
               ) : (
                 <div className="h-full">
