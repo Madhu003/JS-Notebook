@@ -105,7 +105,7 @@ const LandingPage = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w- twelve border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading notebooks...</p>
         </div>
       </div>
@@ -114,26 +114,6 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">JS-Notebook</h1>
-              <span className="ml-3 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                Authenticated
-              </span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center text-sm text-gray-600">
-                <span className="text-lg mr-2">👤</span>
-                <span>{user?.displayName || user?.email || 'User'}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Action Buttons */}
