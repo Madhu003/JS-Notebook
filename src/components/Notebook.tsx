@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import React from 'react';
-import * as Babel from '@babel/standalone';
 import CodeEditor from './CodeEditor/CodeEditor';
 import MarkdownEditor from './MarkdownEditor/MarkdownEditor';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -259,16 +258,33 @@ const Notebook = (): JSX.Element => {
       let runnable = code;
       
       if (lang === 'react' || lang === 'react-ts') {
-        const modifiedCode = code
-          .replace(/export default /g, 'const exportedComponent = ')
-          .replace(/export /g, 'const ');
-        
-        const presets: any[] = [];
-        if (lang === 'react-ts') presets.push('typescript');
-        presets.push(['react', { runtime: 'classic' }]);
-        
-        const result = Babel.transform(modifiedCode, { presets });
-        runnable = result.code || '';
+        try {
+          // Load Babel from CDN dynamically
+          const script = document.createElement('script');
+          script.src = 'https://unpkg.com/@babel/standalone@7.28.4/babel.min.js';
+          
+          await new Promise((resolve, reject) => {
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+          
+          const modifiedCode = code
+            .replace(/export default /g, 'const exportedComponent = ')
+            .replace(/export /g, 'const ');
+          
+          const presets: any[] = [];
+          if (lang === 'react-ts') presets.push('typescript');
+          presets.push(['react', { runtime: 'classic' }]);
+          
+          const result = (window as any).Babel.transform(modifiedCode, { presets });
+          runnable = result.code || '';
+        } catch (babelError) {
+          logs.push('');
+          logs.push('⚠️ Babel compilation failed, running code as-is');
+          logs.push(`Error: ${babelError instanceof Error ? babelError.message : String(babelError)}`);
+          runnable = code; // Fallback to original code
+        }
         
         const fn = new Function('console', 'React', runnable);
         await fn(customConsole as Console, React);
@@ -303,8 +319,25 @@ const Notebook = (): JSX.Element => {
           logs.push(`Error: ${renderError instanceof Error ? renderError.message : String(renderError)}`);
         }
       } else if (lang === 'typescript') {
-        const result = Babel.transform(code, { presets: ['typescript', 'env'] });
-        runnable = result.code || '';
+        try {
+          // Load Babel from CDN dynamically
+          const script = document.createElement('script');
+          script.src = 'https://unpkg.com/@babel/standalone@7.28.4/babel.min.js';
+          
+          await new Promise((resolve, reject) => {
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+          
+          const result = (window as any).Babel.transform(code, { presets: ['typescript', 'env'] });
+          runnable = result.code || '';
+        } catch (babelError) {
+          logs.push('');
+          logs.push('⚠️ TypeScript compilation failed, running as JavaScript');
+          logs.push(`Error: ${babelError instanceof Error ? babelError.message : String(babelError)}`);
+          runnable = code; // Fallback to original code
+        }
         
         const fn = new Function('console', runnable);
         await fn(customConsole as Console);

@@ -1,5 +1,4 @@
 // Polyfills for older browsers
-import 'regenerator-runtime/runtime'
 import './polyfills'
 
 import { StrictMode } from 'react'

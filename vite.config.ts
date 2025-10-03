@@ -9,7 +9,24 @@ export default defineConfig({
   },
   build: {
     target: 'es2020',
-    minify: 'terser',
-    cssMinify: true
+    minify: 'esbuild',
+    cssMinify: true,
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          monaco: ['monaco-editor'],
+          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore']
+        }
+      }
+    }
+  },
+  resolve: {
+    alias: {
+      // Map problematic core-js internals to our mock file
+      '../internals/define-globalThis-property': '/src/utils/core-js-mocks.js',
+      '../internals/globalThis-this': '/src/utils/core-js-mocks.js'
+    }
   }
 })
