@@ -7,6 +7,7 @@ export default defineConfig({
     global: 'globalThis',
     'process.env': {}
   },
+  base: '/', // Ensure relative paths for Netlify
   build: {
     target: 'es2020',
     minify: 'esbuild',

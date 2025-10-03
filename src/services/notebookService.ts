@@ -23,14 +23,26 @@ class NotebookService {
   // Create a new notebook
   async createNotebook(data: CreateNotebookData, userId: string): Promise<string> {
     try {
+      // Clean cells array to remove undefined fields
+      const cleanedCells = (data.cells || []).map(cell => {
+        const cleanedCell = { ...cell };
+        Object.keys(cleanedCell).forEach(cellKey => {
+          if (cleanedCell[cellKey as keyof typeof cleanedCell] === undefined) {
+            delete cleanedCell[cellKey as keyof typeof cleanedCell];
+          }
+        });
+        return cleanedCell;
+      });
+
       const notebookData = {
         ...data,
         userId: userId,
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        cells: data.cells || [],
+        cells: cleanedCells,
         isPublic: data.isPublic || false,
         tags: data.tags || [],
+        description: data.description || '',
       };
 
       const docRef = await addDoc(collection(db, COLLECTIONS.NOTEBOOKS), notebookData);
@@ -102,8 +114,29 @@ class NotebookService {
     try {
       const docRef = doc(db, COLLECTIONS.NOTEBOOKS, id);
       
+      // Filter out undefined values to prevent Firebase errors
+      const filteredData = Object.fromEntries(
+        Object.entries(data).map(([key, value]) => {
+          // Special handling for cells array to clean undefined fields within cells
+          if (key === 'cells' && Array.isArray(value)) {
+            const cleanedCells = value.map(cell => {
+              const cleanedCell = { ...cell };
+              // Remove undefined properties from each cell
+              Object.keys(cleanedCell).forEach(cellKey => {
+                if (cleanedCell[cellKey as keyof typeof cleanedCell] === undefined) {
+                  delete cleanedCell[cellKey as keyof typeof cleanedCell];
+                }
+              });
+              return cleanedCell;
+            });
+            return [key, cleanedCells];
+          }
+          return [key, value];
+        }).filter(([_, value]) => value !== undefined)
+      );
+      
       const updateData = {
-        ...data,
+        ...filteredData,
         updatedAt: Date.now(),
       };
       
