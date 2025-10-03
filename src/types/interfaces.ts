@@ -13,6 +13,8 @@ export interface CodeCell extends BaseCell {
   language?: string;
   output?: string;
   error?: string;
+  executionTime?: number;
+  isCollapsed?: boolean;
 }
 
 // Markdown cell interface

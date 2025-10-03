@@ -1,4 +1,4 @@
- import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import React from 'react';
 import * as Babel from '@babel/standalone';
 import CodeEditor from './CodeEditor/CodeEditor';
@@ -11,16 +11,22 @@ import { notebookService } from '../services/notebookService';
 import type { Notebook } from '../services/firebase';
 import InlineEdit from './InlineEdit';
 import { useAuth } from '../contexts/AuthContext';
- 
+import { useTheme, Theme } from '../contexts/ThemeContext';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { useHotkeys } from 'react-hotkeys-hook';
+import { formatCode } from '../utils/formatting';
+import { exportToPDF, exportToGitHubGist, copyToClipboard } from '../utils/export';
 
 const Notebook = (): JSX.Element => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [notebook, setNotebook] = useState<Notebook | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
   
   const [cells, setCells] = useState<Cell[]>([{
     id: Date.now().toString(),
@@ -28,6 +34,43 @@ const Notebook = (): JSX.Element => {
     content: '',
     language: 'javascript'
   }] as Cell[]);
+
+  // Keyboard shortcuts for global fallback (when Monaco shortcuts don't work)
+  useHotkeys('ctrl+enter,cmd+enter', () => {
+    if (selectedCellId) {
+      const cell = cells.find(c => c.id === selectedCellId);
+      if (cell && isCodeCell(cell)) {
+        runCode(cell.id);
+      }
+    }
+  });
+
+  useHotkeys('ctrl+shift+f,cmd+shift+f', () => {
+    if (selectedCellId) {
+      formatCodeCell(selectedCellId);
+    }
+  });
+
+  // Listen for custom events from Monaco editors
+  useEffect(() => {
+    const handleRunCell = (event: CustomEvent) => {
+      const { cellId } = event.detail;
+      runCode(cellId);
+    };
+
+    const handleFormatCell = (event: CustomEvent) => {
+      const { cellId } = event.detail;
+      formatCodeCell(cellId);
+    };
+
+    window.addEventListener('run-cell', handleRunCell as EventListener);
+    window.addEventListener('format-cell', handleFormatCell as EventListener);
+
+    return () => {
+      window.removeEventListener('run-cell', handleRunCell as EventListener);
+      window.removeEventListener('format-cell', handleFormatCell as EventListener);
+    };
+  });
 
   // Load notebook when component mounts
   useEffect(() => {
@@ -49,7 +92,6 @@ const Notebook = (): JSX.Element => {
           setLoading(false);
         }
       } else {
-        // Create new notebook
         setLoading(false);
       }
     };
@@ -63,7 +105,7 @@ const Notebook = (): JSX.Element => {
     
     const timeoutId = setTimeout(async () => {
       await saveNotebook(false);
-    }, 2000); // Auto-save after 2 seconds of inactivity
+    }, 2000);
 
     return () => clearTimeout(timeoutId);
   }, [cells, id, notebook, loading]);
@@ -73,7 +115,6 @@ const Notebook = (): JSX.Element => {
       setSaving(true);
       
       if (id) {
-        // Update existing notebook
         await notebookService.updateNotebook(id, {
           title: notebook?.title || 'Untitled Notebook',
           description: notebook?.description,
@@ -82,7 +123,6 @@ const Notebook = (): JSX.Element => {
           isPublic: notebook?.isPublic || false,
         });
       } else {
-        // Create new notebook
         const newId = await notebookService.createNotebook({
           title: 'Untitled Notebook',
           description: '',
@@ -94,7 +134,6 @@ const Notebook = (): JSX.Element => {
       }
       
       if (showMessage) {
-        // You could add a toast message here
         console.log('✅ Notebook saved successfully');
       }
       
@@ -121,17 +160,54 @@ const Notebook = (): JSX.Element => {
     }
   };
 
-  const addCell = (type: CellType) => {
-    setCells(prev => [...prev, {
+  const addCell = (type: CellType, insertIndex?: number) => {
+    const newCell: Cell = {
       id: Date.now().toString(),
       type,
       content: '',
-      language: type === 'code' ? 'javascript' : undefined
-    }]);
+      language: type === 'code' ? 'javascript' : undefined,
+      isCollapsed: false
+    } as Cell;
+
+    setCells(prev => {
+      if (insertIndex !== undefined) {
+        const newCells = [...prev];
+        newCells.splice(insertIndex, 0, newCell);
+        return newCells;
+      }
+      return [...prev, newCell];
+    });
   };
 
   const deleteCell = (id: string) => {
     setCells(prev => prev.filter(cell => cell.id !== id));
+  };
+
+  const duplicateCell = (id: string) => {
+    setCells(prev => {
+      const cellIndex = prev.findIndex(cell => cell.id === id);
+      if (cellIndex === -1) return prev;
+      
+      const cellToDuplicate = prev[cellIndex];
+      const duplicatedCell: Cell = {
+        ...cellToDuplicate,
+        id: Date.now().toString(),
+        output: undefined,
+        error: undefined,
+        executionTime: undefined,
+        isCollapsed: false
+      } as Cell;
+      
+      const newCells = [...prev];
+      newCells.splice(cellIndex + 1, 0, duplicatedCell);
+      return newCells;
+    });
+  };
+
+  const toggleCellCollapse = (id: string) => {
+    setCells(prev => prev.map(cell => 
+      cell.id === id && isCodeCell(cell) ? { ...cell, isCollapsed: !cell.isCollapsed } : cell
+    ));
   };
 
   const handleContentChange = (id: string, content: string) => {
@@ -144,18 +220,30 @@ const Notebook = (): JSX.Element => {
     setCells(prev => prev.map(cell => {
       if (cell.id !== id) return cell;
       if (!isCodeCell(cell)) return cell as Cell;
-      // Only change the language, keep the existing content (don't auto-add boilerplate)
       return { ...cell, language } as Cell;
     }));
   };
 
-  // Execute code in a cell and store output/error on that cell
-  const runCode = async (cellId: string) => {
+  const formatCodeCell = async (cellId: string) => {
     const cell = cells.find(c => c.id === cellId);
     if (!cell || !isCodeCell(cell)) return;
 
     try {
-      // Reset output/error first
+      const formatted = await formatCode(cell.content || '', cell.language || 'javascript');
+      handleContentChange(cellId, formatted);
+    } catch (error) {
+      console.error('Formatting error:', error);
+    }
+  };
+
+  // Execute code with execution time tracking
+  const runCode = async (cellId: string) => {
+    const cell = cells.find(c => c.id === cellId);
+    if (!cell || !isCodeCell(cell)) return;
+
+    const startTime = performance.now();
+    
+    try {
       setCells(prev => prev.map(c => c.id === cellId ? { ...c, output: undefined, error: undefined } : c));
 
       const logs: string[] = [];
@@ -170,9 +258,7 @@ const Notebook = (): JSX.Element => {
 
       let runnable = code;
       
-      // Handle React/React-TS code with export statements
       if (lang === 'react' || lang === 'react-ts') {
-        // Remove export statements and execute the component directly
         const modifiedCode = code
           .replace(/export default /g, 'const exportedComponent = ')
           .replace(/export /g, 'const ');
@@ -184,29 +270,21 @@ const Notebook = (): JSX.Element => {
         const result = Babel.transform(modifiedCode, { presets });
         runnable = result.code || '';
         
-        // Execute the React component code with React available
         const fn = new Function('console', 'React', runnable);
         await fn(customConsole as Console, React);
         
-        // Simple React component rendering with debug info
         try {
           logs.push('');
           logs.push('✅ React Component Created Successfully!');
-          logs.push('🔍 Debug: Checking for preview container...');
           
-          // Get preview container
           const previewContainer = document.getElementById(`react-preview-${cellId}`);
-          logs.push(`🔍 Debug: Preview container found: ${!!previewContainer}`);
-          
           if (previewContainer) {
-            // Clear container
             previewContainer.innerHTML = '';
             
-            // Try simple static HTML first for testing
             const staticHTML = `
-              <div style="padding: 20px; border-radius: 8px; background-color: #f8f9fa; border: 1px solid #e9ecef; font-family: system-ui, sans-serif;">
+              <div style="padding: 20px; border-radius: 8px; background-color: ${theme === Theme.Dark ? '#374151' : '#f8f9fa'}; border: 1px solid ${theme === Theme.Dark ? '#4b5563' : '#e9ecef'}; font-family: system-ui, sans-serif; color: ${theme === Theme.Dark ? '#f3f4f6' : '#212529'};">
                 <h1 style="color: #61dafb; margin-top: 0;">Hello, React! ✨</h1>
-                <p style="color: #6c757d;">Start editing to see some magic happen!</p>
+                <p>Start editing to see some magic happen!</p>
                 <button 
                   style="background-color: #61dafb; border: none; color: white; padding: 12px 24px; border-radius: 6px; cursor: pointer;"
                   onclick="console.log('🎉 Button was clicked!')"
@@ -217,94 +295,75 @@ const Notebook = (): JSX.Element => {
             `;
             
             previewContainer.innerHTML = staticHTML;
-            logs.push('🎯 React Preview Rendered (Static HTML)');
-            
-            // Try to render actual React component
-            try {
-              logs.push('🔍 Debug: Attempting React DOM rendering...');
-              
-              // Execute component code in a controlled environment
-              const componentCode = `
-                ${runnable}
-                
-                // Export the component
-                if (typeof exportedComponent !== 'undefined') {
-                  window.lastExportedComponent = exportedComponent;
-                } else if (typeof App !== 'undefined') {
-                  window.lastExportedComponent = App;
-                }
-              `;
-              
-              const fn = new Function('React', 'console', componentCode);
-              await fn(React, customConsole as Console);
-              
-              // Check if component was exported
-              const ComponentToRender = (window as any).lastExportedComponent;
-              logs.push(`🔍 Debug: Component found: ${!!ComponentToRender}`);
-              
-              if (ComponentToRender) {
-                // Try to render with ReactDOM
-                try {
-                  // @ts-ignore
-                  const { createRoot } = await import('react-dom/client');
-                  const element = React.createElement(ComponentToRender);
-                  const root = createRoot(previewContainer);
-                  root.render(element);
-                  logs.push('🎯 Real React Component Rendered!');
-                } catch (reactDOMError) {
-                  const errorMsg = reactDOMError instanceof Error ? reactDOMError.message : String(reactDOMError);
-                  logs.push(`⚠️ ReactDOM Error: ${errorMsg}`);
-                  logs.push('🎯 Using Static Preview Instead');
-                }
-              } else {
-                logs.push('⚠️ No valid React component found');
-              }
-              
-            } catch (componentError) {
-              const errorMsg = componentError instanceof Error ? componentError.message : String(componentError);
-              logs.push(`⚠️ Component Error: ${errorMsg}`);
-              logs.push('🎯 Using Static Preview Instead');
-            }
-          } else {
-            logs.push('⚠️ Preview container not found!');
+            logs.push('🎯 React Preview Rendered');
           }
-          
         } catch (renderError) {
           logs.push('');
-          logs.push('⚠️  React rendering failed completely');
+          logs.push('⚠️ React rendering failed');
           logs.push(`Error: ${renderError instanceof Error ? renderError.message : String(renderError)}`);
         }
       } else if (lang === 'typescript') {
-        // Handle TypeScript without React
         const result = Babel.transform(code, { presets: ['typescript', 'env'] });
         runnable = result.code || '';
         
         const fn = new Function('console', runnable);
         await fn(customConsole as Console);
       } else {
-        // Handle vanilla JavaScript
         const fn = new Function('console', runnable);
         await fn(customConsole as Console);
       }
 
+      const endTime = performance.now();
+      const executionTime = Math.round(endTime - startTime);
+
       setCells(prev => prev.map(c =>
-        c.id === cellId ? { ...c, output: logs.join('\n'), error: undefined } : c
+        c.id === cellId ? { ...c, output: logs.join('\n'), error: undefined, executionTime } : c
       ));
     } catch (err) {
+      const endTime = performance.now();
+      const executionTime = Math.round(endTime - startTime);
       const message = err instanceof Error ? err.message : String(err);
       setCells(prev => prev.map(c =>
-        c.id === cellId ? { ...c, error: message, output: undefined } : c
+        c.id === cellId ? { ...c, error: message, output: undefined, executionTime } : c
       ));
+    }
+  };
+
+  const handleDragEnd = (result: any) => {
+    if (!result.destination) return;
+
+    const items = Array.from(cells);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setCells(items);
+  };
+
+  const handleExportToPDF = async () => {
+    try {
+      await exportToPDF(notebook?.title || 'Untitled Notebook', cells);
+    } catch (error) {
+      console.error('Export to PDF failed:', error);
+    }
+  };
+
+  const handleExportToGist = async () => {
+    try {
+      const content = await exportToGitHubGist(notebook?.title || 'Untitled Notebook', cells);
+      copyToClipboard(content);
+      console.log('✅ Content copied to clipboard as GitHub Gist format');
+    } catch (error) {
+      console.error('Export to Gist failed:', error);
     }
   };
 
   // Handle loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className={`min-h-screen ${theme === Theme.Dark ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading notebook...</p>
+          <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${theme === Theme.Dark ? 'border-blue-400' : 'border-blue-600'} mx-auto`}></div>
+          <p className={`mt-4 ${theme === Theme.Dark ? 'text-gray-300' : 'text-gray-600'}`}>Loading notebook...</p>
         </div>
       </div>
     );
@@ -313,13 +372,13 @@ const Notebook = (): JSX.Element => {
   // Handle error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className={`min-h-screen ${theme === Theme.Dark ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}>
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <h2 className={`text-2xl font-bold ${theme === Theme.Dark ? 'text-red-400' : 'text-red-600'} mb-4`}>Error</h2>
+          <p className={`${theme === Theme.Dark ? 'text-gray-300' : 'text-gray-600'} mb-6`}>{error}</p>
           <button
             onClick={() => navigate('/')}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
+            className={`bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors`}
           >
             Back to Home
           </button>
@@ -329,31 +388,31 @@ const Notebook = (): JSX.Element => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen ${theme === Theme.Dark ? 'bg-gray-900' : 'bg-gray-50'} transition-colors`}>
       {/* Notebook toolbar */}
-      <div className="sticky top-0 bg-white border-b border-gray-200 p-4 shadow-sm">
+      <div className={`sticky top-0 ${theme === Theme.Dark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b p-4 shadow-sm transition-colors`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/')}
-              className="text-gray-600 hover:text-gray-800 flex items-center gap-2"
+              className={`${theme === Theme.Dark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'} flex items-center gap-2 transition-colors`}
             >
               <span>←</span>
               <span>Back to Home</span>
             </button>
             
-            <div className="text-xl font-semibold text-gray-800">
+            <div className={`text-xl font-semibold ${theme === Theme.Dark ? 'text-white' : 'text-gray-800'}`}>
               <InlineEdit
                 value={notebook?.title || 'Untitled Notebook'}
                 onSave={handleRenameNotebook}
-                className="font-semibold text-gray-800"
+                className={`font-semibold ${theme === Theme.Dark ? 'text-white' : 'text-gray-800'}`}
                 placeholder="Enter notebook title..."
               />
             </div>
             
             {saving && (
-              <span className="text-sm text-blue-600 flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <span className={`text-sm ${theme === Theme.Dark ? 'text-blue-400' : 'text-blue-600'} flex items-center gap-2`}>
+                <div className={`animate-spin rounded-full h-4 w-4 border-b-2 ${theme === Theme.Dark ? 'border-blue-400' : 'border-blue-600'}`}></div>
                 Saving...
               </span>
             )}
@@ -364,141 +423,242 @@ const Notebook = (): JSX.Element => {
               type="button"
               onClick={() => saveNotebook(true)}
               disabled={saving}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded transition-colors flex items-center gap-2"
+              className={`px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded transition-colors flex items-center gap-2`}
             >
               {saving ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
               ) : (
                 <span>💾</span>
               )}
-              <span>Save Notebook</span>
+              <span>Save</span>
             </button>
             
             <button
               type="button"
               onClick={() => addCell(CellType.Code)}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              className={`px-4 py-2 ${theme === Theme.Dark ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-500 hover:bg-blue-600'} text-white rounded transition-colors`}
             >
-              + Code Cell
+              + Code
             </button>
+            
             <button
               type="button"
               onClick={() => addCell(CellType.Markdown)}
-              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+              className={`px-4 py-2 ${theme === Theme.Dark ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'} text-white rounded transition-colors`}
             >
-              + Markdown Cell
+              + Markdown
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportToPDF}
+              className={`px-4 py-2 ${theme === Theme.Dark ? 'bg-purple-600 hover:bg-purple-700' : 'bg-purple-500 hover:bg-purple-600'} text-white rounded transition-colors`}
+            >
+              📄 PDF
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportToGist}
+              className={`px-4 py-2 ${theme === Theme.Dark ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-indigo-500 hover:bg-indigo-600'} text-white rounded transition-colors`}
+            >
+              📋 Gist
             </button>
           </div>
         </div>
       </div>
 
-      {/* Notebook cells */}
+      {/* Notebook cells with drag and drop */}
       <div className="max-w-5xl mx-auto p-6">
-        {cells.map((cell) => (
-          <div
-            key={cell.id}
-            className="mb-4 border border-gray-200 rounded-lg overflow-hidden"
-          >
-            {/* Cell toolbar */}
-            <div className="bg-gray-100 px-4 py-2 flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-600">
-                {cell.type === 'code' ? 'Code' : 'Markdown'}
-              </span>
-              <div className="flex gap-2">
-                {cell.type === 'code' && (
-                  <>
-                    <button 
-                      type="button"
-                      onClick={() => { void runCode(cell.id); }}
-                      className="text-sm text-gray-500 hover:text-gray-700 bg-white px-3 py-1 rounded border border-gray-300 hover:bg-gray-50"
-                    >
-                      Run
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        const currentLanguage = cell.language || 'javascript';
-                        console.log('Boilerplate button clicked for language:', currentLanguage);
-                        const languageConfig = getLanguageConfig(currentLanguage);
-                        console.log('Language config:', languageConfig);
-                        const boilerplate = languageConfig.boilerplate;
-                        console.log('Boilerplate content:', boilerplate);
-                        if (boilerplate) {
-                          handleContentChange(cell.id, boilerplate);
-                          console.log('Boilerplate inserted successfully');
-                        } else {
-                          console.error('No boilerplate found for language:', currentLanguage);
-                        }
-                      }}
-                      className="text-sm text-blue-500 hover:text-blue-700 bg-white px-3 py-1 rounded border border-blue-300 hover:bg-blue-50"
-                    >
-                      Boilerplate
-                    </button>
-                  </>
-                )}
-                <button 
-                  type="button"
-                  onClick={() => deleteCell(cell.id)}
-                  className="text-sm text-red-500 hover:text-red-700"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-            {/* Cell content */}
-            <div className="p-4 min-h-[350px]">
-              {cell.type === 'code' ? (
-                <div className="h-full">
-                  <CodeEditor
-                    value={cell.content}
-                    onChange={(value) => handleContentChange(cell.id, value)}
-                    language={cell.language}
-                    onLanguageChange={(lang) => handleLanguageChange(cell.id, lang)}
-                  />
-                </div>
-              ) : (
-                <div className="h-full">
-                  <MarkdownEditor
-                    value={cell.content}
-                    onChange={(value) => handleContentChange(cell.id, value)}
-                  />
-                </div>
-              )}
-              
-              {/* React Preview Section - Always visible for React components */}
-              {cell.type === 'code' && cell.language === 'react' && (
-                <div className="mt-4">
-                  <div className="border border-gray-300 rounded-lg overflow-hidden">
-                    <div className="bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 border-b">
-                      🎯 Live React Preview
-                    </div>
-                    <div className="p-4 bg-white min-h-[200px]">
-                      <div id={`react-preview-${cell.id}`} className="react-preview-container">
-                        {/* React component will be rendered here */}
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="notebook-cells">
+            {(provided) => (
+              <div {...provided.droppableProps} ref={provided.innerRef}>
+                {cells.map((cell, index) => (
+                  <Draggable key={cell.id} draggableId={cell.id} index={index}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        className="mb-4"
+                      >
+                        <div
+                          className={`border rounded-lg overflow-hidden transition-all ${
+                            snapshot.isDragging 
+                              ? 'shadow-lg transform rotate-2' 
+                              : `${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-200'} shadow-sm`
+                          } ${selectedCellId === cell.id ? `${theme === Theme.Dark ? 'ring-2 ring-blue-500' : 'ring-2 ring-blue-500'}` : ''}`}
+                        >
+                          {/* Cell drag handle */}
+                          <div {...provided.dragHandleProps} className={`${theme === Theme.Dark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} px-4 py-2 cursor-grab active:cursor-grabbing transition-colors flex justify-between items-center`}>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">⋮⋮</span>
+                              <span className={`text-sm font-medium ${theme === Theme.Dark ? 'text-gray-300' : 'text-gray-600'}`}>
+                                {cell.type === 'code' ? `Code (${cell.language})` : 'Markdown'}
+                              </span>
+                              {isCodeCell(cell) && cell.executionTime && (
+                                <span className={`text-xs px-2 py-1 rounded ${theme === Theme.Dark ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800'}`}>
+                                  ⏱️ {cell.executionTime}ms
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <span className={`text-xs ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                💡 Click in code editor, then Cmd+Enter to run, Cmd+Shift+F to format
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Cell toolbar */}
+                          <div className={`${theme === Theme.Dark ? 'bg-gray-700' : 'bg-gray-100'} px-4 py-2 flex justify-between items-center`}>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setSelectedCellId(cell.id)}
+                                className={`px-2 py-1 text-xs rounded ${
+                                  selectedCellId === cell.id 
+                                    ? `${theme === Theme.Dark ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'}`
+                                    : `${theme === Theme.Dark ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-600 hover:bg-gray-200'}`
+                                } transition-colors`}
+                              >
+                                {selectedCellId === cell.id ? '✓ Selected' : 'Select'}
+                              </button>
+                            </div>
+                            <div className="flex gap-2">
+                              {isCodeCell(cell) && (
+                                <>
+                                  <button 
+                                    type="button"
+                                    onClick={() => runCode(cell.id)}
+                                    className={`text-sm ${theme === Theme.Dark ? 'text-gray-300 hover:text-white bg-gray-600 hover:bg-gray-500' : 'text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-50'} px-3 py-1 rounded border transition-colors`}
+                                  >
+                                    ▶️ Run
+                                  </button>
+                                  
+                                  <button 
+                                    type="button"
+                                    onClick={() => formatCodeCell(cell.id)}
+                                    className={`text-sm ${theme === Theme.Dark ? 'text-blue-400 hover:text-blue-300 bg-gray-600 hover:bg-gray-500' : 'text-blue-500 hover:text-blue-700 bg-white hover:bg-blue-50'} px-3 py-1 rounded border transition-colors`}
+                                  >
+                                    ✨ Format
+                                  </button>
+
+                                  <button 
+                                    type="button"
+                                    onClick={() => {
+                                      const currentLanguage = cell.language || 'javascript';
+                                      const languageConfig = getLanguageConfig(currentLanguage);
+                                      const boilerplate = languageConfig.boilerplate;
+                                      if (boilerplate) {
+                                        handleContentChange(cell.id, boilerplate);
+                                      }
+                                    }}
+                                    className={`text-sm ${theme === Theme.Dark ? 'text-yellow-400 hover:text-yellow-300 bg-gray-600 hover:bg-gray-500' : 'text-yellow-600 hover:text-yellow-700 bg-white hover:bg-yellow-50'} px-3 py-1 rounded border transition-colors`}
+                                  >
+                                    📝 Template
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleCellCollapse(cell.id)}
+                                    className={`text-sm ${theme === Theme.Dark ? 'text-gray-300 hover:text-white bg-gray-600 hover:bg-gray-500' : 'text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-50'} px-3 py-1 rounded border transition-colors`}
+                                  >
+                                    {cell.isCollapsed ? '📖 Expand' : '📘 Collapse'}
+                                  </button>
+                                </>
+                              )}
+                              
+                              <button 
+                                type="button"
+                                onClick={() => duplicateCell(cell.id)}
+                                className={`text-sm ${theme === Theme.Dark ? 'text-green-400 hover:text-green-300 bg-gray-600 hover:bg-gray-500' : 'text-green-600 hover:text-green-700 bg-white hover:bg-green-50'} px-3 py-1 rounded border transition-colors`}
+                              >
+                                📋 Duplicate
+                              </button>
+                              
+                              <button 
+                                type="button"
+                                onClick={() => deleteCell(cell.id)}
+                                className={`text-sm ${theme === Theme.Dark ? 'text-red-400 hover:text-red-300 bg-gray-600 hover:bg-gray-500' : 'text-red-600 hover:text-red-700 bg-white hover:bg-red-50'} px-3 py-1 rounded border transition-colors`}
+                              >
+                                🗑️ Delete
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Cell content */}
+                          {!isCodeCell(cell) || !cell.isCollapsed ? (
+                            <div className="p-4 min-h-[350px]">
+                              {cell.type === 'code' ? (
+                                <div className="h-full">
+                                  <CodeEditor
+                                    value={cell.content}
+                                    onChange={(value) => handleContentChange(cell.id, value)}
+                                    language={cell.language}
+                                    onLanguageChange={(lang) => handleLanguageChange(cell.id, lang)}
+                                    onFocus={() => setSelectedCellId(cell.id)}
+                                    cellId={cell.id}
+                                  />
+                                </div>
+                              ) : (
+                                <div className="h-full">
+                                  <MarkdownEditor
+                                    value={cell.content}
+                                    onChange={(value) => handleContentChange(cell.id, value)}
+                                    onFocus={() => setSelectedCellId(cell.id)}
+                                  />
+                                </div>
+                              )}
+                              
+                              {/* React Preview Section */}
+                              {cell.type === 'code' && cell.language === 'react' && (
+                                <div className="mt-4">
+                                  <div className={`border ${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-300'} rounded-lg overflow-hidden`}>
+                                    <div className={`${theme === Theme.Dark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'} px-3 py-2 text-sm font-medium border-b`}>
+                                      🎯 Live React Preview
+                                    </div>
+                                    <div className={`p-4 ${theme === Theme.Dark ? 'bg-gray-800' : 'bg-white'} min-h-[200px]`}>
+                                      <div id={`react-preview-${cell.id}`} className="react-preview-container">
+                                        {/* React component will be rendered here */}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Output section */}
+                              {cell.type === 'code' && (cell.output || cell.error) && (
+                                <div className="mt-4">
+                                  <div className={`p-3 rounded font-mono text-sm mb-2 ${
+                                    cell.error 
+                                      ? `${theme === Theme.Dark ? 'bg-red-900 text-red-200' : 'bg-red-50 text-red-700'}`
+                                      : `${theme === Theme.Dark ? 'bg-gray-800 text-gray-100' : 'bg-gray-800 text-gray-100'}`
+                                  }`}>
+                                    <pre className="whitespace-pre-wrap">
+                                      {cell.error || cell.output}
+                                    </pre>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className={`p-4 ${theme === Theme.Dark ? 'bg-gray-800' : 'bg-gray-50'} text-center`}>
+                              <p className={`${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                Cell collapsed - click expand to view content
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Output section */}
-              {cell.type === 'code' && (cell.output || cell.error) && (
-                <div className="mt-4">
-                  {/* Console Output */}
-                  <div className={`p-3 rounded font-mono text-sm mb-2 ${
-                    cell.error ? 'bg-red-50 text-red-700' : 'bg-gray-800 text-gray-100'
-                  }`}>
-                    <pre className="whitespace-pre-wrap">
-                      {cell.error || cell.output}
-                    </pre>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       </div>
-    </div>
+        </div>
   );
 };
 

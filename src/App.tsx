@@ -4,10 +4,13 @@ import LandingPage from './components/LandingPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider } from './contexts/AuthContext'
 import { useAuth } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
+import { useTheme, Theme } from './contexts/ThemeContext'
 import { default as Notebook } from './components/Notebook'
 
 const AppContent = () => {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const handleLogout = async () => {
     try {
@@ -18,32 +21,39 @@ const AppContent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen ${theme === Theme.Dark ? 'bg-gray-900' : 'bg-gray-50'} transition-colors`}>
       {user && (
-        <header className="bg-white shadow-sm">
+        <header className={`${theme === Theme.Dark ? 'bg-gray-800' : 'bg-white'} shadow-sm transition-colors`}>
           <div className="max-w-7xl mx-auto py-4 px-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold text-gray-800">JS Notebook</h1>
-              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+              <h1 className={`text-2xl font-semibold ${theme === Theme.Dark ? 'text-white' : 'text-gray-800'}`}>JS Notebook</h1>
+              <span className={`px-2 py-1 text-xs ${theme === Theme.Dark ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800'} rounded-full`}>
                 Authenticated
               </span>
             </div>
             <div className="flex items-center gap-4">
+              <button
+                onClick={toggleTheme}
+                className={`p-2 rounded-md ${theme === Theme.Dark ? 'text-yellow-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'} transition-colors`}
+                title="Toggle theme"
+              >
+                {theme === Theme.Dark ? '🌞' : '🌙'}
+              </button>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">👤</span>
-                  <span className="text-sm text-gray-700">
+                  <span className={`text-sm ${theme === Theme.Dark ? 'text-gray-300' : 'text-gray-700'}`}>
                     {user.displayName || user.email}
                   </span>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="text-sm text-red-600 hover:text-red-800 px-3 py-1 rounded border border-red-300 hover:bg-red-50"
+                  className={`text-sm text-red-600 hover:text-red-800 px-3 py-1 rounded border border-red-300 hover:bg-red-50 transition-colors`}
                 >
                   Logout
                 </button>
               </div>
-              <Link to="/" className="text-sm text-blue-600 hover:text-blue-800">Home</Link>
+              <Link to="/" className={`text-sm ${theme === Theme.Dark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'} transition-colors`}>Home</Link>
             </div>
           </div>
         </header>
@@ -66,9 +76,11 @@ const AppContent = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 

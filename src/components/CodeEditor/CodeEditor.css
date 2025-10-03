@@ -3,33 +3,60 @@
   height: 100%;
 }
 
-.monaco-editor .margin {
-  background-color: #1e1e1e;
+/* Dark theme styles */
+.dark .monaco-editor .margin {
+  background-color: #1e1e1e !important;
 }
 
-.monaco-editor .monaco-editor-background {
-  background-color: #1e1e1e;
+.dark .monaco-editor .monaco-editor-background {
+  background-color: #1e1e1e !important;
 }
 
-/* Better visibility for active line */
-.monaco-editor .current-line {
+.dark .monaco-editor .current-line {
   border: none !important;
   background-color: #282828 !important;
 }
 
-/* Better visibility for selection */
+.dark .monaco-editor .cursor {
+  background-color: #fff !important;
+  border-color: #fff !important;
+}
+
+.dark .monaco-editor .bracket-match {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid #4e4e4e !important;
+}
+
+/* Light theme styles */
+.light .monaco-editor .margin,
+.monaco-editor .margin {
+  background-color: #ffffff !important;
+}
+
+.light .monaco-editor .monaco-editor-background,
+.monaco-editor .monaco-editor-background {
+  background-color: #ffffff !important;
+}
+
+.light .monaco-editor .current-line,
+.monaco-editor .current-line {
+  border: none !important;
+  background-color: #f6f6f6 !important;
+}
+
+.light .monaco-editor .cursor,
+.monaco-editor .cursor {
+  background-color: #000 !important;
+  border-color: #000 !important;
+}
+
+.light .monaco-editor .bracket-match,
+.monaco-editor .bracket-match {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #d0d0d0 !important;
+}
+
+/* Universal styles */
 .monaco-editor .selected-text {
   background-color: #264f78 !important;
-}
-
-/* Better visibility for cursor */
-.monaco-editor .cursor {
-  background-color: #fff;
-  border-color: #fff;
-}
-
-/* Match brackets highlighting */
-.monaco-editor .bracket-match {
-  background-color: rgba(255, 255, 255, 0.1);
-  border: 1px solid #4e4e4e;
 }
