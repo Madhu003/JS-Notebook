@@ -19,11 +19,11 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto py-4 px-4 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-800">JS Notebook</h1>
-          <div className="flex items-center gap-4">
-            {user && (
+      {user && (
+        <header className="bg-white shadow-sm">
+          <div className="max-w-7xl mx-auto py-4 px-4 flex items-center justify-between">
+            <h1 className="text-2xl font-semibold text-gray-800">JS Notebook</h1>
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">👤</span>
@@ -38,11 +38,11 @@ const AppContent = () => {
                   Logout
                 </button>
               </div>
-            )}
-            <Link to="/" className="text-sm text-blue-600 hover:text-blue-800">Home</Link>
+              <Link to="/" className="text-sm text-blue-600 hover:text-blue-800">Home</Link>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
       <Routes>
         <Route path="/" element={
           <ProtectedRoute>

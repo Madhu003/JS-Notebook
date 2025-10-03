@@ -5,7 +5,6 @@ interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
   error: string | null;
   clearError: () => void;
@@ -41,15 +40,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const register = async (email: string, password: string, displayName: string) => {
-    try {
-      setError(null);
-      await authService.register(email, password, displayName);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
-      throw err;
-    }
-  };
 
   const logout = async () => {
     try {
@@ -69,7 +59,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     user,
     loading,
     login,
-    register,
     logout,
     error,
     clearError,
