@@ -1,15 +1,15 @@
-export const enum CellType {
+export enum CellType {
   Code = 'code',
   Markdown = 'markdown'
 }
 
-export const enum EditorTheme {
+export enum EditorTheme {
   Dark = 'vs-dark',
   Light = 'vs-light',
   HighContrast = 'hc-black'
 }
 
-export const enum MarkdownSyntaxType {
+export enum MarkdownSyntaxType {
   Bold = '**',
   Italic = '*',
   InlineCode = '`',

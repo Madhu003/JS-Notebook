@@ -4,7 +4,7 @@ import LandingPage from './components/LandingPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider } from './contexts/AuthContext'
 import { useAuth } from './contexts/AuthContext'
-import Notebook from './components/Notebook'
+import { default as Notebook } from './components/Notebook'
 
 const AppContent = () => {
   const { user, logout } = useAuth();

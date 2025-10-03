@@ -1,0 +1,15 @@
+# Browsers that we support
+last 2 versions
+ie >= 9
+> 1%
+dead
+not op_mini all
+
+# Specific targets for ES5 compatibility
+ie >= 9
+chrome >= 49
+firefox >= 45
+safari >= 10
+edge >= 12
+iOS >= 10
+Android >= 5

@@ -1,3 +1,7 @@
+// Polyfills for older browsers
+import 'regenerator-runtime/runtime'
+import './polyfills'
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
