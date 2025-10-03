@@ -2,20 +2,36 @@ import { useEffect, useRef, useState } from "react";
 import * as monaco from "monaco-editor";
 import { marked } from "marked";
 import "./MarkdownEditor.css";
-import type { MarkdownEditorProps } from '../../types';
-import { MARKDOWN_EDITOR_CONFIG, MARKED_OPTIONS, MarkdownSyntaxType } from '../../types';
+import { MarkdownEditorProps, MarkdownSyntaxType, MARKDOWN_EDITOR_CONFIG, MARKED_OPTIONS } from "../../types";
 
 const MarkdownEditor = ({
   value,
   onChange,
 }: MarkdownEditorProps): JSX.Element => {
   const editorRef = useRef<HTMLDivElement>(null);
-  const previewRef = useRef<HTMLDivElement>(null);
-  const monacoEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(
-    null
-  );
-  const [isPreviewVisible, setIsPreviewVisible] = useState(true);
-  const [previewHtml, setPreviewHtml] = useState("");
+  const monacoEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const [preview, setPreview] = useState({
+    html: "",
+    visible: true
+  });
+
+  // Initialize marked and handle preview updates
+  useEffect(() => {
+    marked.setOptions(MARKED_OPTIONS);
+    updatePreview(value);
+  }, []);
+
+  const updatePreview = async (markdown: string) => {
+    if (!preview.visible) return;
+    
+    try {
+      const parseResult = marked.parse(markdown);
+      const html = parseResult instanceof Promise ? await parseResult : parseResult;
+      setPreview(prev => ({ ...prev, html }));
+    } catch (err) {
+      console.error('Markdown parsing error:', err);
+    }
+  };
 
   useEffect(() => {
     if (editorRef.current) {
@@ -31,6 +47,7 @@ const MarkdownEditor = ({
         const newValue = monacoEditorRef.current?.getValue();
         if (newValue !== undefined) {
           onChange(newValue);
+          updatePreview(newValue);
         }
       });
     }
@@ -49,26 +66,9 @@ const MarkdownEditor = ({
       value !== monacoEditorRef.current.getValue()
     ) {
       monacoEditorRef.current.setValue(value);
+      updatePreview(value);
     }
   }, [value]);
-
-  // Initialize marked options
-  useEffect(() => {
-    marked.setOptions(MARKED_OPTIONS);
-  }, []);
-
-  // Update preview HTML when value or preview visibility changes
-  useEffect(() => {
-    if (isPreviewVisible && monacoEditorRef.current) {
-      const markdown = monacoEditorRef.current.getValue();
-      const parseResult = marked.parse(markdown);
-      if (parseResult instanceof Promise) {
-        parseResult.then(html => setPreviewHtml(html));
-      } else {
-        setPreviewHtml(parseResult);
-      }
-    }
-  }, [value, isPreviewVisible]);
 
   const insertMarkdownSyntax = (syntax: MarkdownSyntaxType, wrap: boolean = false) => {
     if (!monacoEditorRef.current) return;
@@ -167,10 +167,10 @@ const MarkdownEditor = ({
         </button>
         <div className="flex-1"></div>
         <button
-          onClick={() => setIsPreviewVisible(!isPreviewVisible)}
+          onClick={() => setPreview(prev => ({ ...prev, visible: !prev.visible }))}
           className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-md"
         >
-          {isPreviewVisible ? "Hide Preview" : "Show Preview"}
+          {preview.visible ? "Hide Preview" : "Show Preview"}
         </button>
       </div>
 
@@ -178,13 +178,12 @@ const MarkdownEditor = ({
       <div className="flex flex-1 h-[calc(100%-48px)]">
         <div
           ref={editorRef}
-          className={`${isPreviewVisible ? "w-1/2" : "w-full"} h-full border-r border-gray-200`}
+          className={`${preview.visible ? "w-1/2" : "w-full"} h-full border-r border-gray-200`}
         />
-        {isPreviewVisible && (
+        {preview.visible && (
           <div
-            ref={previewRef}
             className="w-1/2 h-full overflow-auto p-4 bg-white markdown-preview"
-            dangerouslySetInnerHTML={{ __html: previewHtml }}
+            dangerouslySetInnerHTML={{ __html: preview.html }}
           />
         )}
       </div>

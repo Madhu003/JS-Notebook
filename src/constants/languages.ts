@@ -48,42 +48,55 @@ console.log(result);
     name: "React (JavaScript)",
     extension: "jsx",
     monacoLanguage: "javascript",
-    boilerplate: `// React JSX Boilerplate
-import React from 'react';
-
+    boilerplate: `// React JSX Boilerplate (React is provided for you; no imports needed)
 function App() {
+  console.log('🚀 React App is loading...');
+  
+  const handleClick = () => {
+    console.log('🎉 Button was clicked!');
+  };
+  
   return (
-    <div className="app">
-      <h1>Hello, React!</h1>
-      <p>Start editing to see some magic happen!</p>
+    <div className="app" style={{
+      padding: '20px',
+      borderRadius: '8px',
+      backgroundColor: '#f8f9fa',
+      border: '1px solid #e9ecef',
+      fontFamily: 'system-ui, sans-serif'
+    }}>
+      <h1 style={{color: '#61dafb', marginTop: '0'}}>
+        Hello, React! ✨
+      </h1>
+      <p style={{color: '#6c757d', fontSize: '16px'}}>
+        Start editing to see some magic happen!
+      </p>
+      <button 
+        style={{
+          backgroundColor: '#61dafb',
+          color: 'white',
+          border: 'none',
+          padding: '12px 24px',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          marginTop: '10px',
+          transition: 'all 0.2s'
+        }}
+        onClick={handleClick}
+      >
+        Click Me! 🚀
+      </button>
     </div>
   );
 }
 
-export default App;
-`,
-  },
-  {
-    id: "react-ts",
-    name: "React (TypeScript)",
-    extension: "tsx",
-    monacoLanguage: "typescript",
-    boilerplate: `// React TypeScript Boilerplate
-import React from 'react';
-
-const App: React.FC = () => {
-  return (
-    <div className="app">
-      <h1>Hello, React with TypeScript!</h1>
-      <p>Start editing to see some magic happen!</p>
-    </div>
-  );
-};
+console.log('✅ App component created successfully');
 
 export default App;
 `,
   },
-].slice(0, 2);
+];
 
 export const DEFAULT_LANGUAGE = "javascript";
 
