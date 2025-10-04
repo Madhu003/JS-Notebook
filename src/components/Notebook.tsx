@@ -14,7 +14,8 @@ import { useTheme, Theme } from '../contexts/ThemeContext';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { formatCode } from '../utils/formatting';
-import { exportToPDF, exportToGitHubGist, copyToClipboard } from '../utils/export';
+import { exportToPDF } from '../utils/export';
+import { babelService } from '../services/babelService';
 
 const Notebook = (): JSX.Element => {
   const { id } = useParams<{ id: string }>();
@@ -28,7 +29,7 @@ const Notebook = (): JSX.Element => {
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
   
   const [cells, setCells] = useState<Cell[]>([{
-    id: Date.now().toString(),
+    id: `cell_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
     type: CellType.Code,
     content: '',
     language: 'javascript'
@@ -81,7 +82,26 @@ const Notebook = (): JSX.Element => {
           
           if (fetchedNotebook) {
             setNotebook(fetchedNotebook);
-            setCells(fetchedNotebook.cells || notebookService.createDefaultCells());
+            
+            // Fix any cells with invalid IDs (migrate from Date.now() format)
+            const fixCellIds = (cells: Cell[]): Cell[] => {
+              return cells.map(cell => {
+                // Check if ID is NOT in the new format (should start with 'cell_')
+                if (!cell.id.startsWith('cell_')) {
+                  console.warn(`⚠️ Migrating old cell ID: ${cell.id}`);
+                  const timestamp = Date.now();
+                  const randomSuffix = Math.random().toString(36).substring(2, 9);
+                  return {
+                    ...cell,
+                    id: `cell_${timestamp}_${randomSuffix}`
+                  };
+                }
+                return cell;
+              });
+            };
+            
+            const cells = fetchedNotebook.cells || notebookService.createDefaultCells();
+            setCells(fixCellIds(cells));
           } else {
             setError('Notebook not found');
           }
@@ -160,8 +180,13 @@ const Notebook = (): JSX.Element => {
   };
 
   const addCell = (type: CellType, insertIndex?: number) => {
+    // Create a more robust unique ID
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 9);
+    const cellId = `cell_${timestamp}_${randomSuffix}`;
+    
     const newCell: Cell = {
-      id: Date.now().toString(),
+      id: cellId,
       type,
       content: '',
       language: type === 'code' ? 'javascript' : undefined,
@@ -190,7 +215,7 @@ const Notebook = (): JSX.Element => {
       const cellToDuplicate = prev[cellIndex];
       const duplicatedCell: Cell = {
         ...cellToDuplicate,
-        id: Date.now().toString(),
+        id: `cell_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
         output: undefined,
         error: undefined,
         executionTime: undefined,
@@ -258,27 +283,18 @@ const Notebook = (): JSX.Element => {
       let runnable = code;
       
       if (lang === 'react' || lang === 'react-ts') {
+        const isTypeScript = lang === 'react-ts';
+        
         try {
-          // Load Babel from CDN dynamically
-          const script = document.createElement('script');
-          script.src = 'https://unpkg.com/@babel/standalone@7.28.4/babel.min.js';
+          // Use Babel service for compilation
+          const compileResult = await babelService.compileReact(code, isTypeScript);
+          runnable = compileResult.code;
           
-          await new Promise((resolve, reject) => {
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-          });
-          
-          const modifiedCode = code
-            .replace(/export default /g, 'const exportedComponent = ')
-            .replace(/export /g, 'const ');
-          
-          const presets: any[] = [];
-          if (lang === 'react-ts') presets.push('typescript');
-          presets.push(['react', { runtime: 'classic' }]);
-          
-          const result = (window as any).Babel.transform(modifiedCode, { presets });
-          runnable = result.code || '';
+          if (!compileResult.success && compileResult.error) {
+            logs.push('');
+            logs.push('⚠️ React compilation had issues, running compiled code');
+            logs.push(`Warning: ${compileResult.error}`);
+          }
         } catch (babelError) {
           logs.push('');
           logs.push('⚠️ Babel compilation failed, running code as-is');
@@ -320,18 +336,15 @@ const Notebook = (): JSX.Element => {
         }
       } else if (lang === 'typescript') {
         try {
-          // Load Babel from CDN dynamically
-          const script = document.createElement('script');
-          script.src = 'https://unpkg.com/@babel/standalone@7.28.4/babel.min.js';
+          // Use Babel service for TypeScript compilation
+          const compileResult = await babelService.compileTypeScript(code);
+          runnable = compileResult.code;
           
-          await new Promise((resolve, reject) => {
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-          });
-          
-          const result = (window as any).Babel.transform(code, { presets: ['typescript', 'env'] });
-          runnable = result.code || '';
+          if (!compileResult.success && compileResult.error) {
+            logs.push('');
+            logs.push('⚠️ TypeScript compilation had issues, running compiled code');
+            logs.push(`Warning: ${compileResult.error}`);
+          }
         } catch (babelError) {
           logs.push('');
           logs.push('⚠️ TypeScript compilation failed, running as JavaScript');
@@ -363,13 +376,55 @@ const Notebook = (): JSX.Element => {
   };
 
   const handleDragEnd = (result: any) => {
-    if (!result.destination) return;
+    console.log('🎯 Drag end result:', {
+      draggableId: result.draggableId,
+      source: result.source,
+      destination: result.destination,
+      currentCellIds: cells.map(cell => cell.id),
+      allCellsValid: cells.every(cell => cell.id.startsWith('cell_')),
+      type: 'drag_end'
+    });
+
+    if (!result.destination) {
+      console.log('❌ No destination provided');
+      return;
+    }
+
+    if (result.source.index === result.destination.index) {
+      console.log('⚠️ Same position, no reorder needed');
+      return;
+    }
+
+    // Check if the draggableId exists in current cells
+    const draggedCell = cells.find(cell => cell.id === result.draggableId);
+    if (!draggedCell) {
+      console.error(`❌ Could not find cell with ID: ${result.draggableId}`);
+      console.log('Available cell IDs:', cells.map(cell => cell.id));
+      return;
+    }
 
     const items = Array.from(cells);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
-
+    
+    console.log('✅ Reordering completed:', {
+      from: result.source.index,
+      to: result.destination.index,
+      cellType: reorderedItem.type,
+      newOrder: items.map((cell, idx) => `${idx}: ${cell.id.substring(0, 20)}`)
+    });
+    
     setCells(items);
+
+    // Keep selected cell if it was moved
+    if (selectedCellId === result.draggableId) {
+      console.log(`✅ Selected cell moved from position ${result.source.index} to ${result.destination.index}`);
+    }
+    
+    // Force a re-render to ensure DragDropContext has the latest state
+    setTimeout(() => {
+      console.log('🔄 State updated, cells now:', items.map(cell => cell.id.substring(0, 15)));
+    }, 100);
   };
 
   const handleExportToPDF = async () => {
@@ -380,15 +435,6 @@ const Notebook = (): JSX.Element => {
     }
   };
 
-  const handleExportToGist = async () => {
-    try {
-      const content = await exportToGitHubGist(notebook?.title || 'Untitled Notebook', cells);
-      copyToClipboard(content);
-      console.log('✅ Content copied to clipboard as GitHub Gist format');
-    } catch (error) {
-      console.error('Export to Gist failed:', error);
-    }
-  };
 
   // Handle loading state
   if (loading) {
@@ -490,71 +536,82 @@ const Notebook = (): JSX.Element => {
               📄 PDF
             </button>
 
-            <button
-              type="button"
-              onClick={handleExportToGist}
-              className={`px-4 py-2 ${theme === Theme.Dark ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-indigo-500 hover:bg-indigo-600'} text-white rounded transition-colors`}
-            >
-              📋 Gist
-            </button>
           </div>
         </div>
       </div>
 
       {/* Notebook cells with drag and drop */}
       <div className="max-w-5xl mx-auto p-6">
-        <DragDropContext onDragEnd={handleDragEnd}>
+        <DragDropContext 
+          onDragStart={(result) => {
+            console.log('🚀🚀🚀 DRAG START EVENT FIRED! 🚀🚀🚀');
+            console.log('🚀 Drag start:', {
+              draggableId: result.draggableId,
+              source: result.source,
+              currentCellIds: cells.map(cell => cell.id),
+              hasDraggedCell: cells.some(cell => cell.id === result.draggableId),
+              type: 'drag_start'
+            });
+          }}
+          onBeforeDragStart={() => {
+            console.log('🎯🎯🎯 BEFORE DRAG START! Should show drag ghost preview 🎯🎯🎯');
+          }}
+          onDragEnd={handleDragEnd}
+        >
           <Droppable droppableId="notebook-cells">
             {(provided) => (
-              <div {...provided.droppableProps} ref={provided.innerRef}>
+              <div 
+                {...provided.droppableProps} 
+                ref={provided.innerRef}
+                className="transition-colors duration-200"
+              >
                 {cells.map((cell, index) => (
                   <Draggable key={cell.id} draggableId={cell.id} index={index}>
-                    {(provided, snapshot) => (
+                    {(provided) => (
                       <div
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         className="mb-4"
+                        style={{ pointerEvents: 'auto' }}
                       >
                         <div
-                          className={`border rounded-lg overflow-hidden transition-all ${
-                            snapshot.isDragging 
-                              ? 'shadow-lg transform rotate-2' 
-                              : `${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-200'} shadow-sm`
-                          } ${selectedCellId === cell.id ? `${theme === Theme.Dark ? 'ring-2 ring-blue-500' : 'ring-2 ring-blue-500'}` : ''}`}
+                          className={`border rounded-lg overflow-hidden transition-all duration-300 ${
+                            `${theme === Theme.Dark ? 'border-gray-600 hover:border-gray-500' : 'border-gray-200 hover:border-gray-300'} shadow-sm`
+                          } ${selectedCellId === cell.id ? `${theme === Theme.Dark ? 'ring-2 ring-blue-500 shadow-md' : 'ring-2 ring-blue-500 shadow-md'}` : ''}`}
                         >
-                          {/* Cell drag handle */}
-                          <div {...provided.dragHandleProps} className={`${theme === Theme.Dark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} px-4 py-2 cursor-grab active:cursor-grabbing transition-colors flex justify-between items-center`}>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm">⋮⋮</span>
-                              <span className={`text-sm font-medium ${theme === Theme.Dark ? 'text-gray-300' : 'text-gray-600'}`}>
+                          {/* Cell header */}
+                          <div className={`${
+                            theme === Theme.Dark 
+                              ? 'bg-gray-800' 
+                              : 'bg-white'
+                          } px-4 py-3 flex justify-between items-center border-b border-gray-300/20`}>
+                            <div className="flex items-center gap-3">
+                              <span className={`text-sm font-medium ${theme === Theme.Dark ? 'text-gray-300' : 'text-gray-700'}`}>
                                 {cell.type === 'code' ? `Code (${cell.language})` : 'Markdown'}
                               </span>
                               {isCodeCell(cell) && cell.executionTime && (
-                                <span className={`text-xs px-2 py-1 rounded ${theme === Theme.Dark ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800'}`}>
-                                  ⏱️ {cell.executionTime}ms
+                                <span className={`text-xs px-2 py-1 rounded-full font-mono ${theme === Theme.Dark ? 'bg-green-900/80 text-green-200 border border-green-700' : 'bg-green-100 text-green-800 border border-green-200'}`}>
+                                  {cell.executionTime}ms
                                 </span>
                               )}
                             </div>
-                            <div className="flex gap-2">
-                              <span className={`text-xs ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                💡 Click in code editor, then Cmd+Enter to run, Cmd+Shift+F to format
-                              </span>
+                            <div className="flex items-center gap-2">
+                              {cell.type === 'code' ? (
+                                <span className={`text-xs ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                  💡 Cmd+Enter to run • Cmd+Shift+F to format
+                                </span>
+                              ) : (
+                                <span className={`text-xs ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                  👆 Click cell to edit
+                                </span>
+                              )}
                             </div>
                           </div>
 
                           {/* Cell toolbar */}
                           <div className={`${theme === Theme.Dark ? 'bg-gray-700' : 'bg-gray-100'} px-4 py-2 flex justify-between items-center`}>
                             <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => setSelectedCellId(cell.id)}
-                                className={`px-2 py-1 text-xs rounded ${
-                                  selectedCellId === cell.id 
-                                    ? `${theme === Theme.Dark ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'}`
-                                    : `${theme === Theme.Dark ? 'text-gray-300 hover:bg-gray-600' : 'text-gray-600 hover:bg-gray-200'}`
-                                } transition-colors`}
-                              >
-                                {selectedCellId === cell.id ? '✓ Selected' : 'Select'}
-                              </button>
+                              {/* Empty space for alignment */}
                             </div>
                             <div className="flex gap-2">
                               {isCodeCell(cell) && (
@@ -638,6 +695,7 @@ const Notebook = (): JSX.Element => {
                                     value={cell.content}
                                     onChange={(value) => handleContentChange(cell.id, value)}
                                     onFocus={() => setSelectedCellId(cell.id)}
+                                    isFocused={selectedCellId === cell.id}
                                   />
                                 </div>
                               )}

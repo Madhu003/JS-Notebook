@@ -162,9 +162,11 @@ class NotebookService {
 
   // Create default cells for new notebook
   createDefaultCells(): Cell[] {
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 9);
     return [
       {
-        id: Date.now().toString(),
+        id: `cell_${timestamp}_${randomSuffix}`,
         type: CellType.Code,
         content: '',
         language: 'javascript',
@@ -176,7 +178,7 @@ class NotebookService {
   async createSampleTemplate(userId: string): Promise<string> {
     const cells: Cell[] = [
       {
-        id: Date.now().toString(),
+        id: `cell_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
         type: CellType.Code,
         content: `// Welcome to JS-Notebook!
 console.log('Hello, World!');
@@ -190,7 +192,7 @@ console.log(greet('JS-Notebook'));`,
         language: 'javascript',
       },
       {
-        id: (Date.now() + 1).toString(),
+        id: `cell_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
         type: CellType.Markdown,
         content: `# Welcome to JS-Notebook
 

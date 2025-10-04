@@ -2,13 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 
 interface InlineEditProps {
   value: string;
-  onSave: (newValue: string) => Promise<void>;
+  onSave?: (newValue: string) => Promise<void>;
+  onChange?: (newValue: string) => void;
   className?: string;
   placeholder?: string;
   multiline?: boolean;
 }
 
-const InlineEdit = ({ value, onSave, className = '', placeholder = 'Enter text...', multiline = false }: InlineEditProps) => {
+const InlineEdit = ({ value, onSave, onChange, className = '', placeholder = 'Enter text...', multiline = false }: InlineEditProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
   const [saving, setSaving] = useState(false);
@@ -48,8 +49,14 @@ const InlineEdit = ({ value, onSave, className = '', placeholder = 'Enter text..
     try {
       setSaving(true);
       setError(null);
-      await onSave(editValue.trim());
-      setIsEditing(false);
+      
+      if (onChange) {
+        onChange(editValue.trim());
+        setIsEditing(false);
+      } else if (onSave) {
+        await onSave(editValue.trim());
+        setIsEditing(false);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
