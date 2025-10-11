@@ -429,9 +429,29 @@ const Notebook = (): JSX.Element => {
 
   const handleExportToPDF = async () => {
     try {
+      // Show loading state
+      const originalButton = document.querySelector('[data-pdf-button]') as HTMLButtonElement;
+      if (originalButton) {
+        originalButton.disabled = true;
+        originalButton.innerHTML = '<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> Generating PDF...';
+      }
+      
       await exportToPDF(notebook?.title || 'Untitled Notebook', cells);
+      
+      // Restore button state
+      if (originalButton) {
+        originalButton.disabled = false;
+        originalButton.innerHTML = '📄 PDF';
+      }
     } catch (error) {
       console.error('Export to PDF failed:', error);
+      
+      // Restore button state on error
+      const originalButton = document.querySelector('[data-pdf-button]') as HTMLButtonElement;
+      if (originalButton) {
+        originalButton.disabled = false;
+        originalButton.innerHTML = '📄 PDF';
+      }
     }
   };
 
@@ -531,6 +551,7 @@ const Notebook = (): JSX.Element => {
             <button
               type="button"
               onClick={handleExportToPDF}
+              data-pdf-button
               className={`px-4 py-2 ${theme === Theme.Dark ? 'bg-purple-600 hover:bg-purple-700' : 'bg-purple-500 hover:bg-purple-600'} text-white rounded transition-colors`}
             >
               📄 PDF
