@@ -20,6 +20,9 @@ export interface CodeCell extends BaseCell {
 // Markdown cell interface
 export interface MarkdownCell extends BaseCell {
   type: CellType.Markdown;
+  output?: string;
+  error?: string;
+  executionTime?: number;
 }
 
 // Union type for all cell types

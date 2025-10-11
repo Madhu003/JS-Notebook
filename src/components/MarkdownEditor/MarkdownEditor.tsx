@@ -10,7 +10,20 @@ const MarkdownEditor = ({
   onChange,
   onFocus,
   isFocused = false,
-}: MarkdownEditorProps & { onFocus?: () => void; isFocused?: boolean }): JSX.Element => {
+  onRun,
+  cellId,
+  output,
+  error,
+  executionTime,
+}: MarkdownEditorProps & { 
+  onFocus?: () => void; 
+  isFocused?: boolean;
+  onRun?: (cellId: string) => void;
+  cellId?: string;
+  output?: string;
+  error?: string;
+  executionTime?: number;
+}): JSX.Element => {
   const { theme } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null);
   const monacoEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -52,6 +65,18 @@ const MarkdownEditor = ({
         console.log('🎯 Editor focused, calling onFocus');
         onFocus?.();
       });
+
+      // Add keyboard shortcut for running markdown
+      if (onRun && cellId) {
+        monacoEditorRef.current.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+          if (onFocus) {
+            onFocus(); // First select the cell
+            setTimeout(() => {
+              onRun(cellId);
+            }, 10);
+          }
+        });
+      }
 
       monacoEditorRef.current.onDidChangeModelContent(() => {
         const newValue = monacoEditorRef.current?.getValue();
@@ -208,6 +233,17 @@ const MarkdownEditor = ({
             <span>{"{  }"}</span>
           </button>
           <div className="flex-1"></div>
+          
+          {onRun && cellId && (
+            <button
+              onClick={() => onRun(cellId)}
+              className={`px-3 py-1.5 text-sm ${theme === Theme.Dark ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-green-500 hover:bg-green-600 text-white'} rounded-md transition-colors mr-2`}
+              title="Run Markdown (Cmd+Enter)"
+            >
+              ▶️ Run
+            </button>
+          )}
+          
           <button
             onClick={() => setPreview(prev => ({ ...prev, visible: !prev.visible }))}
             className={`px-3 py-1.5 text-sm ${theme === Theme.Dark ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-100 hover:bg-gray-200'} rounded-md transition-colors`}
@@ -231,6 +267,31 @@ const MarkdownEditor = ({
           dangerouslySetInnerHTML={{ __html: preview.html }}
         />
       </div>
+      
+      {/* Console Output section */}
+      {(output || error) && (
+        <div className="mt-4">
+          <div className={`border ${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-300'} rounded-lg overflow-hidden`}>
+            <div className={`${theme === Theme.Dark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'} px-3 py-2 text-sm font-medium border-b flex items-center justify-between`}>
+              <span>📝 Markdown Console Output</span>
+              {executionTime && (
+                <span className={`text-xs px-2 py-1 rounded-full font-mono ${theme === Theme.Dark ? 'bg-green-900/80 text-green-200 border border-green-700' : 'bg-green-100 text-green-800 border border-green-200'}`}>
+                  {executionTime}ms
+                </span>
+              )}
+            </div>
+            <div className={`p-3 rounded font-mono text-sm ${
+              error 
+                ? `${theme === Theme.Dark ? 'bg-red-900 text-red-200' : 'bg-red-50 text-red-700'}`
+                : `${theme === Theme.Dark ? 'bg-gray-800 text-gray-100' : 'bg-gray-800 text-gray-100'}`
+            }`}>
+              <pre className="whitespace-pre-wrap">
+                {error || output}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

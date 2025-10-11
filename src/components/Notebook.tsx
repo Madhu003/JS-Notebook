@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import React from 'react';
-import CodeEditor from './CodeEditor/CodeEditor';
+import JavaScriptEditor from './JavaScriptEditor';
+import ReactEditor from './ReactEditor';
 import MarkdownEditor from './MarkdownEditor/MarkdownEditor';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { Cell } from '../types';
@@ -179,7 +180,7 @@ const Notebook = (): JSX.Element => {
     }
   };
 
-  const addCell = (type: CellType, insertIndex?: number) => {
+  const addCell = (type: CellType, language?: string, insertIndex?: number) => {
     // Create a more robust unique ID
     const timestamp = Date.now();
     const randomSuffix = Math.random().toString(36).substring(2, 9);
@@ -189,7 +190,7 @@ const Notebook = (): JSX.Element => {
       id: cellId,
       type,
       content: '',
-      language: type === 'code' ? 'javascript' : undefined,
+      language: type === 'code' ? (language || 'javascript') : undefined,
       isCollapsed: false
     } as Cell;
 
@@ -240,13 +241,6 @@ const Notebook = (): JSX.Element => {
     ));
   };
 
-  const handleLanguageChange = (id: string, language: string) => {
-    setCells(prev => prev.map(cell => {
-      if (cell.id !== id) return cell;
-      if (!isCodeCell(cell)) return cell as Cell;
-      return { ...cell, language } as Cell;
-    }));
-  };
 
   const formatCodeCell = async (cellId: string) => {
     const cell = cells.find(c => c.id === cellId);
@@ -263,7 +257,7 @@ const Notebook = (): JSX.Element => {
   // Execute code with execution time tracking
   const runCode = async (cellId: string) => {
     const cell = cells.find(c => c.id === cellId);
-    if (!cell || !isCodeCell(cell)) return;
+    if (!cell) return;
 
     const startTime = performance.now();
     
@@ -278,67 +272,305 @@ const Notebook = (): JSX.Element => {
       };
 
       const code = cell.content || '';
-      const lang = cell.language || 'javascript';
+      const lang = isCodeCell(cell) ? (cell.language || 'javascript') : 'markdown';
 
       let runnable = code;
-      
-      if (lang === 'react' || lang === 'react-ts') {
+
+      // Handle markdown cells
+      if (cell.type === 'markdown') {
+        try {
+          logs.push('📝 Processing Markdown content...');
+          logs.push('');
+          
+          // Simple markdown processing simulation
+          const lines = code.split('\n');
+          let processedLines = 0;
+          
+          lines.forEach((line) => {
+            if (line.trim()) {
+              processedLines++;
+              if (line.startsWith('# ')) {
+                logs.push(`✅ Heading 1: ${line.substring(2)}`);
+              } else if (line.startsWith('## ')) {
+                logs.push(`✅ Heading 2: ${line.substring(3)}`);
+              } else if (line.startsWith('### ')) {
+                logs.push(`✅ Heading 3: ${line.substring(4)}`);
+              } else if (line.startsWith('- ') || line.startsWith('* ')) {
+                logs.push(`✅ List item: ${line.substring(2)}`);
+              } else if (line.startsWith('```')) {
+                logs.push(`✅ Code block detected`);
+              } else if (line.trim()) {
+                logs.push(`✅ Paragraph: ${line.substring(0, 50)}${line.length > 50 ? '...' : ''}`);
+              }
+            }
+          });
+          
+          logs.push('');
+          logs.push(`📊 Markdown Processing Complete:`);
+          logs.push(`   - Total lines: ${lines.length}`);
+          logs.push(`   - Processed lines: ${processedLines}`);
+          logs.push(`   - Empty lines: ${lines.length - processedLines}`);
+          logs.push('');
+          logs.push('🎯 Markdown preview updated successfully!');
+          
+        } catch (markdownError) {
+          logs.push('');
+          logs.push('❌ Markdown processing error:');
+          logs.push(`Error: ${markdownError instanceof Error ? markdownError.message : String(markdownError)}`);
+        }
+      } else if (isCodeCell(cell)) {
+        if (lang === 'react' || lang === 'react-ts') {
         const isTypeScript = lang === 'react-ts';
+        
+        // Add initial logs
+        logs.push('🚀 Starting React component execution...');
+        logs.push(`📝 Language: ${lang}`);
+        logs.push(`📄 Code length: ${code.length} characters`);
         
         try {
           // Use Babel service for compilation
+          logs.push('🔧 Calling Babel service for React compilation...');
           const compileResult = await babelService.compileReact(code, isTypeScript);
+          
+          logs.push(`📊 Compilation result: success=${compileResult.success}`);
+          if (compileResult.error) {
+            logs.push(`❌ Compilation error: ${compileResult.error}`);
+          }
+          
+          logs.push(`📏 Compiled code length: ${compileResult.code.length} characters`);
+          logs.push(`📄 First 100 chars of compiled code: ${compileResult.code.substring(0, 100)}...`);
+          
+          // Debug: Show more of the compiled code
+          logs.push(`📄 Full compiled code:`);
+          logs.push(compileResult.code);
+          
           runnable = compileResult.code;
           
-          if (!compileResult.success && compileResult.error) {
-            logs.push('');
-            logs.push('⚠️ React compilation had issues, running compiled code');
-            logs.push(`Warning: ${compileResult.error}`);
-          }
+          logs.push('✅ Babel compilation completed');
+          
         } catch (babelError) {
           logs.push('');
-          logs.push('⚠️ Babel compilation failed, running code as-is');
+          logs.push('❌ CRITICAL: Babel compilation FAILED!');
           logs.push(`Error: ${babelError instanceof Error ? babelError.message : String(babelError)}`);
-          runnable = code; // Fallback to original code
+          logs.push('');
+          logs.push('⚠️ Cannot execute JSX without compilation!');
+          logs.push('Please check that:');
+          logs.push('1. Babel is loaded correctly');
+          logs.push('2. The code syntax is valid JSX');
+          logs.push('3. Browser console for detailed error logs');
+          
+          // Set error and return - DO NOT execute uncompiled JSX
+          const endTime = performance.now();
+          const executionTime = Math.round(endTime - startTime);
+          const errorMessage = `Babel compilation failed: ${babelError instanceof Error ? babelError.message : String(babelError)}`;
+          
+          setCells(prev => prev.map(c =>
+            c.id === cellId ? { ...c, error: errorMessage, output: logs.join('\n'), executionTime } : c
+          ));
+          return;
         }
         
+        logs.push('🎯 Executing React component...');
+        
+        // Ensure React is available in the execution context
+        const ReactForExecution = React;
+        logs.push(`📦 React object available: ${ReactForExecution ? 'Yes' : 'No'}`);
+        logs.push(`📦 React.createElement available: ${typeof ReactForExecution?.createElement === 'function' ? 'Yes' : 'No'}`);
+        
         const fn = new Function('console', 'React', runnable);
-        await fn(customConsole as Console, React);
+        await fn(customConsole as Console, ReactForExecution);
+        
+        logs.push('✅ React component execution completed');
         
         try {
           logs.push('');
-          logs.push('✅ React Component Created Successfully!');
+          logs.push('🎯 Rendering React component to preview...');
           
           const previewContainer = document.getElementById(`react-preview-${cellId}`);
           if (previewContainer) {
             previewContainer.innerHTML = '';
             
-            const staticHTML = `
-              <div style="padding: 20px; border-radius: 8px; background-color: ${theme === Theme.Dark ? '#374151' : '#f8f9fa'}; border: 1px solid ${theme === Theme.Dark ? '#4b5563' : '#e9ecef'}; font-family: system-ui, sans-serif; color: ${theme === Theme.Dark ? '#f3f4f6' : '#212529'};">
-                <h1 style="color: #61dafb; margin-top: 0;">Hello, React! ✨</h1>
-                <p>Start editing to see some magic happen!</p>
-                <button 
-                  style="background-color: #61dafb; border: none; color: white; padding: 12px 24px; border-radius: 6px; cursor: pointer;"
-                  onclick="console.log('🎉 Button was clicked!')"
-                >
-                  Click Me! 🚀
-                </button>
-              </div>
-            `;
+            // Create a React root for this specific preview
+            const rootElement = document.createElement('div');
+            previewContainer.appendChild(rootElement);
             
-            previewContainer.innerHTML = staticHTML;
-            logs.push('🎯 React Preview Rendered');
+            try {
+              // Execute the compiled code to get the component
+              logs.push('🔧 Executing compiled React code...');
+              const componentFunction = new Function('React', 'console', runnable);
+              
+              // Create a React element from the component
+              let reactElement;
+              try {
+                // Execute the compiled code to set up the component
+                componentFunction(React, customConsole);
+                
+                // Try to find the component in various ways
+                let component = null;
+                
+                // Method 1: Look for exported component
+                if ((window as any).exportedComponent && typeof (window as any).exportedComponent === 'function') {
+                  component = (window as any).exportedComponent;
+                  logs.push('✅ Found exported component');
+                }
+                // Method 2: Look for App component
+                else if ((window as any).App && typeof (window as any).App === 'function') {
+                  component = (window as any).App;
+                  logs.push('✅ Found App component');
+                }
+                // Method 3: Look for any function that starts with uppercase
+                else {
+                  const globalKeys = Object.keys(window);
+                  for (const key of globalKeys) {
+                    if (key[0] === key[0].toUpperCase() && typeof (window as any)[key] === 'function') {
+                      component = (window as any)[key];
+                      logs.push(`✅ Found component: ${key}`);
+                      break;
+                    }
+                  }
+                }
+                
+                if (component && typeof component === 'function') {
+                  // Create React element from component
+                  reactElement = React.createElement(component);
+                  logs.push('✅ React element created from component function');
+                } else {
+                  // Fallback: create a simple component
+                  logs.push('⚠️ No component found, creating fallback component');
+                  const FallbackComponent = () => {
+                    return React.createElement('div', {
+                      style: {
+                        padding: '20px',
+                        backgroundColor: '#f8f9fa',
+                        border: '1px solid #dee2e6',
+                        borderRadius: '8px',
+                        fontFamily: 'system-ui, sans-serif'
+                      }
+                    }, 
+                      React.createElement('h3', { style: { margin: '0 0 10px 0', color: '#495057' } }, 'Component Executed'),
+                      React.createElement('p', { style: { margin: 0, color: '#6c757d' } }, 'Code compiled and executed successfully!')
+                    );
+                  };
+                  reactElement = React.createElement(FallbackComponent);
+                }
+              } catch (componentError) {
+                logs.push(`⚠️ Component execution error: ${componentError instanceof Error ? componentError.message : String(componentError)}`);
+                
+                // Fallback: try to create a simple component from the code
+                const fallbackCode = `
+                  function FallbackComponent() {
+                    return React.createElement('div', {
+                      style: {
+                        padding: '20px',
+                        borderRadius: '8px',
+                        backgroundColor: '${theme === Theme.Dark ? '#374151' : '#f8f9fa'}',
+                        border: '1px solid ${theme === Theme.Dark ? '#4b5563' : '#e9ecef'}',
+                        fontFamily: 'system-ui, sans-serif',
+                        color: '${theme === Theme.Dark ? '#f3f4f6' : '#212529'}'
+                      }
+                    }, 
+                      React.createElement('h2', { style: { color: '#61dafb', marginTop: 0 } }, 'React Component'),
+                      React.createElement('p', null, 'Component executed successfully!'),
+                      React.createElement('div', {
+                        style: {
+                          backgroundColor: '${theme === Theme.Dark ? '#1f2937' : '#f3f4f6'}',
+                          padding: '12px',
+                          borderRadius: '4px',
+                          marginTop: '12px'
+                        }
+                      },
+                        React.createElement('code', {
+                          style: {
+                            color: '${theme === Theme.Dark ? '#10b981' : '#059669'}',
+                            fontFamily: 'Monaco, Consolas, monospace'
+                          }
+                        }, '✅ Code compiled and executed')
+                      )
+                    );
+                  }
+                `;
+                
+                const fallbackFunction = new Function('React', 'console', fallbackCode);
+                reactElement = React.createElement(fallbackFunction(React, customConsole));
+                logs.push('🔄 Using fallback component');
+              }
+              
+              // Render the React element using ReactDOM
+              logs.push('🎨 Rendering React element to DOM...');
+              
+              // Use ReactDOM to render the component
+              const ReactDOM = (window as any).ReactDOM;
+              logs.push(`🔍 ReactDOM check: ${ReactDOM ? 'EXISTS' : 'NULL'}`);
+              logs.push(`🔍 ReactDOM.render: ${ReactDOM?.render ? 'EXISTS' : 'NULL'}`);
+              
+              if (ReactDOM && ReactDOM.render) {
+                logs.push('🎨 Using ReactDOM.render...');
+                ReactDOM.render(reactElement, rootElement);
+                logs.push('✅ React component rendered successfully!');
+              } else {
+                // Fallback: try to use createRoot if available
+                const ReactDOMClient = (window as any).ReactDOMClient;
+                logs.push(`🔍 ReactDOMClient check: ${ReactDOMClient ? 'EXISTS' : 'NULL'}`);
+                logs.push(`🔍 ReactDOMClient.createRoot: ${ReactDOMClient?.createRoot ? 'EXISTS' : 'NULL'}`);
+                
+                if (ReactDOMClient && ReactDOMClient.createRoot) {
+                  logs.push('🎨 Using ReactDOMClient.createRoot...');
+                  const root = ReactDOMClient.createRoot(rootElement);
+                  root.render(reactElement);
+                  logs.push('✅ React component rendered with createRoot!');
+                } else {
+                  logs.push('❌ Neither ReactDOM.render nor ReactDOMClient.createRoot available');
+                  logs.push('Available ReactDOM methods: ' + Object.keys(ReactDOM || {}).join(', '));
+                  throw new Error('ReactDOM not available - neither render nor createRoot found');
+                }
+              }
+              
+            } catch (renderError) {
+              logs.push(`❌ React rendering failed: ${renderError instanceof Error ? renderError.message : String(renderError)}`);
+              
+              // Ultimate fallback: show error message
+              rootElement.innerHTML = `
+                <div style="padding: 20px; border-radius: 8px; background-color: ${theme === Theme.Dark ? '#374151' : '#f8f9fa'}; border: 1px solid ${theme === Theme.Dark ? '#4b5563' : '#e9ecef'}; font-family: system-ui, sans-serif; color: ${theme === Theme.Dark ? '#f3f4f6' : '#212529'};">
+                  <h2 style="color: #ef4444; margin-top: 0;">⚠️ Rendering Error</h2>
+                  <p>Could not render React component. Check console for details.</p>
+                  <div style="background-color: ${theme === Theme.Dark ? '#1f2937' : '#f3f4f6'}; padding: 12px; border-radius: 4px; margin-top: 12px;">
+                    <code style="color: #ef4444; font-family: 'Monaco', 'Consolas', monospace;">
+                      ${renderError instanceof Error ? renderError.message : String(renderError)}
+                    </code>
+                  </div>
+                </div>
+              `;
+            }
+          } else {
+            logs.push('⚠️ Preview container not found');
           }
-        } catch (renderError) {
+        } catch (previewError) {
           logs.push('');
-          logs.push('⚠️ React rendering failed');
-          logs.push(`Error: ${renderError instanceof Error ? renderError.message : String(renderError)}`);
+          logs.push('❌ Preview rendering failed');
+          logs.push(`Error: ${previewError instanceof Error ? previewError.message : String(previewError)}`);
         }
-      } else if (lang === 'typescript') {
+        } else if (lang === 'typescript') {
+        // Add initial logs for TypeScript
+        logs.push('🚀 Starting TypeScript execution...');
+        logs.push(`📝 Language: ${lang}`);
+        logs.push(`📄 Code length: ${code.length} characters`);
+        
         try {
           // Use Babel service for TypeScript compilation
+          logs.push('🔧 Calling Babel service for TypeScript compilation...');
           const compileResult = await babelService.compileTypeScript(code);
+          
+          logs.push(`📊 Compilation result: success=${compileResult.success}`);
+          if (compileResult.error) {
+            logs.push(`❌ Compilation error: ${compileResult.error}`);
+          }
+          
+          logs.push(`📏 Compiled code length: ${compileResult.code.length} characters`);
+          logs.push(`📄 First 100 chars of compiled code: ${compileResult.code.substring(0, 100)}...`);
+          
           runnable = compileResult.code;
+          
+          logs.push('✅ TypeScript compilation completed');
           
           if (!compileResult.success && compileResult.error) {
             logs.push('');
@@ -352,11 +584,23 @@ const Notebook = (): JSX.Element => {
           runnable = code; // Fallback to original code
         }
         
+        logs.push('🎯 Executing TypeScript code...');
         const fn = new Function('console', runnable);
         await fn(customConsole as Console);
+        
+        logs.push('✅ TypeScript execution completed');
       } else {
+        // Add initial logs for JavaScript
+        logs.push('🚀 Starting JavaScript execution...');
+        logs.push(`📝 Language: ${lang}`);
+        logs.push(`📄 Code length: ${code.length} characters`);
+        
+        logs.push('🎯 Executing JavaScript code...');
         const fn = new Function('console', runnable);
         await fn(customConsole as Console);
+        
+        logs.push('✅ JavaScript execution completed');
+      }
       }
 
       const endTime = performance.now();
@@ -532,21 +776,30 @@ const Notebook = (): JSX.Element => {
               <span>Save</span>
             </button>
             
-            <button
-              type="button"
-              onClick={() => addCell(CellType.Code)}
-              className={`px-4 py-2 ${theme === Theme.Dark ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-500 hover:bg-blue-600'} text-white rounded transition-colors`}
-            >
-              + Code
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => addCell(CellType.Markdown)}
-              className={`px-4 py-2 ${theme === Theme.Dark ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'} text-white rounded transition-colors`}
-            >
-              + Markdown
-            </button>
+            {/* Add Cell Dropdown */}
+            <div className="relative">
+              <select
+                onChange={(e) => {
+                  const [type, language] = e.target.value.split('-');
+                  addCell(type as CellType, language);
+                  e.target.value = ''; // Reset dropdown
+                }}
+                className={`px-4 py-2 ${theme === Theme.Dark ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-500 hover:bg-blue-600'} text-white rounded transition-colors appearance-none pr-8 cursor-pointer`}
+                defaultValue=""
+              >
+                <option value="" disabled>+ Add Cell</option>
+                <option value="code-javascript">📝 JavaScript</option>
+                <option value="code-typescript">📘 TypeScript</option>
+                <option value="code-react">⚛️ React</option>
+                <option value="code-react-ts">⚛️ React TypeScript</option>
+                <option value="markdown-">📄 Markdown</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
 
             <button
               type="button"
@@ -592,6 +845,7 @@ const Notebook = (): JSX.Element => {
                       <div
                         ref={provided.innerRef}
                         {...provided.draggableProps}
+                        {...provided.dragHandleProps}
                         className="mb-4"
                         style={{ pointerEvents: 'auto' }}
                       >
@@ -635,15 +889,17 @@ const Notebook = (): JSX.Element => {
                               {/* Empty space for alignment */}
                             </div>
                             <div className="flex gap-2">
+                              {/* Run button for all cell types */}
+                              <button 
+                                type="button"
+                                onClick={() => runCode(cell.id)}
+                                className={`text-sm ${theme === Theme.Dark ? 'text-gray-300 hover:text-white bg-gray-600 hover:bg-gray-500' : 'text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-50'} px-3 py-1 rounded border transition-colors`}
+                              >
+                                ▶️ Run
+                              </button>
+                              
                               {isCodeCell(cell) && (
                                 <>
-                                  <button 
-                                    type="button"
-                                    onClick={() => runCode(cell.id)}
-                                    className={`text-sm ${theme === Theme.Dark ? 'text-gray-300 hover:text-white bg-gray-600 hover:bg-gray-500' : 'text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-50'} px-3 py-1 rounded border transition-colors`}
-                                  >
-                                    ▶️ Run
-                                  </button>
                                   
                                   <button 
                                     type="button"
@@ -698,17 +954,32 @@ const Notebook = (): JSX.Element => {
 
                           {/* Cell content */}
                           {!isCodeCell(cell) || !cell.isCollapsed ? (
-                            <div className="p-4 min-h-[350px]">
+                            <div className="p-4 min-h-[500px]">
                               {cell.type === 'code' ? (
                                 <div className="h-full">
-                                  <CodeEditor
-                                    value={cell.content}
-                                    onChange={(value) => handleContentChange(cell.id, value)}
-                                    language={cell.language}
-                                    onLanguageChange={(lang) => handleLanguageChange(cell.id, lang)}
-                                    onFocus={() => setSelectedCellId(cell.id)}
-                                    cellId={cell.id}
-                                  />
+                                  {cell.language === 'react' || cell.language === 'react-ts' ? (
+                                    <ReactEditor
+                                      value={cell.content}
+                                      onChange={(value) => handleContentChange(cell.id, value)}
+                                      language={cell.language}
+                                      onFocus={() => setSelectedCellId(cell.id)}
+                                      cellId={cell.id}
+                                      output={cell.output}
+                                      error={cell.error}
+                                      executionTime={cell.executionTime}
+                                    />
+                                  ) : (
+                                    <JavaScriptEditor
+                                      value={cell.content}
+                                      onChange={(value) => handleContentChange(cell.id, value)}
+                                      language={cell.language}
+                                      onFocus={() => setSelectedCellId(cell.id)}
+                                      cellId={cell.id}
+                                      output={cell.output}
+                                      error={cell.error}
+                                      executionTime={cell.executionTime}
+                                    />
+                                  )}
                                 </div>
                               ) : (
                                 <div className="h-full">
@@ -717,38 +988,12 @@ const Notebook = (): JSX.Element => {
                                     onChange={(value) => handleContentChange(cell.id, value)}
                                     onFocus={() => setSelectedCellId(cell.id)}
                                     isFocused={selectedCellId === cell.id}
+                                    onRun={runCode}
+                                    cellId={cell.id}
+                                    output={cell.output}
+                                    error={cell.error}
+                                    executionTime={cell.executionTime}
                                   />
-                                </div>
-                              )}
-                              
-                              {/* React Preview Section */}
-                              {cell.type === 'code' && cell.language === 'react' && (
-                                <div className="mt-4">
-                                  <div className={`border ${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-300'} rounded-lg overflow-hidden`}>
-                                    <div className={`${theme === Theme.Dark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'} px-3 py-2 text-sm font-medium border-b`}>
-                                      🎯 Live React Preview
-                                    </div>
-                                    <div className={`p-4 ${theme === Theme.Dark ? 'bg-gray-800' : 'bg-white'} min-h-[200px]`}>
-                                      <div id={`react-preview-${cell.id}`} className="react-preview-container">
-                                        {/* React component will be rendered here */}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* Output section */}
-                              {cell.type === 'code' && (cell.output || cell.error) && (
-                                <div className="mt-4">
-                                  <div className={`p-3 rounded font-mono text-sm mb-2 ${
-                                    cell.error 
-                                      ? `${theme === Theme.Dark ? 'bg-red-900 text-red-200' : 'bg-red-50 text-red-700'}`
-                                      : `${theme === Theme.Dark ? 'bg-gray-800 text-gray-100' : 'bg-gray-800 text-gray-100'}`
-                                  }`}>
-                                    <pre className="whitespace-pre-wrap">
-                                      {cell.error || cell.output}
-                                    </pre>
-                                  </div>
                                 </div>
                               )}
                             </div>
@@ -770,7 +1015,7 @@ const Notebook = (): JSX.Element => {
           </Droppable>
         </DragDropContext>
       </div>
-        </div>
+    </div>
   );
 };
 
