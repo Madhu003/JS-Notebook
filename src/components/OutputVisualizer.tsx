@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useTheme, Theme } from '../contexts/ThemeContext';
+import { useTheme, Theme } from '../hooks/useTheme';
 
 interface OutputVisualizerProps {
   output: string;

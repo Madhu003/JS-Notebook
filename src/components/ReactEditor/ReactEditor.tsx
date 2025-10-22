@@ -3,9 +3,10 @@ import Editor from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import type { CodeEditorProps } from '../../types';
 import { LANGUAGES } from '../../constants/languages';
-import { useTheme, Theme } from '../../contexts/ThemeContext';
-import { useSnippets } from '../../contexts/SnippetContext';
-import { useEditorSettings } from '../../contexts/EditorSettingsContext';
+import { useTheme, Theme } from '../../hooks/useTheme';
+import { useSnippetsContext } from '../../hooks/useSnippets';
+import { useAuth } from '../../hooks/useAuth';
+import { useEditorSettingsContext } from '../../hooks/useEditorSettings';
 import SnippetManager from '../SnippetManager/SnippetManager';
 import ErrorBoundary from '../ErrorBoundary';
 import EditorSettings from '../EditorSettings/EditorSettings';
@@ -30,8 +31,9 @@ const ReactEditor = ({
   executionTime
 }: ReactEditorProps): JSX.Element => {
   const { theme, monacoTheme } = useTheme();
-  const { getSnippetsByLanguage } = useSnippets();
-  const { settings } = useEditorSettings();
+  const { user } = useAuth();
+  const { getSnippetsByLanguage } = useSnippetsContext(user?.uid || '');
+  const { settings } = useEditorSettingsContext();
   const [isSnippetManagerOpen, setIsSnippetManagerOpen] = useState(false);
   const [isEditorSettingsOpen, setIsEditorSettingsOpen] = useState(false);
   const [previewSize, setPreviewSize] = useState<'compact' | 'expanded'>('compact');

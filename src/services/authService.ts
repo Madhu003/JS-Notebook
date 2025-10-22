@@ -112,8 +112,13 @@ class AuthService {
   }
 
   // Get current user
-  getCurrentUser(): AuthUser | null {
-    return this.mapFirebaseUser(auth.currentUser);
+  async getCurrentUser(): Promise<AuthUser | null> {
+    return new Promise((resolve) => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        unsubscribe();
+        resolve(this.mapFirebaseUser(user));
+      });
+    });
   }
 }
 

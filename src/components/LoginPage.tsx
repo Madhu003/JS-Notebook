@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, error, clearError } = useAuth();
+  const { login, error } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,10 +16,9 @@ const LoginPage = () => {
 
     try {
       setLoading(true);
-      clearError();
       await login(email, password);
     } catch (error) {
-      // Error is handled by the auth context
+      // Error is handled by the auth hook
       console.error('Authentication error:', error);
     } finally {
       setLoading(false);

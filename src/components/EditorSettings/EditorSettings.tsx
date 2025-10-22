@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useEditorSettings } from '../../contexts/EditorSettingsContext';
-import { useTheme, Theme, MonacoTheme } from '../../contexts/ThemeContext';
+import { useEditorSettingsContext } from '../../hooks/useEditorSettings';
+import { useTheme, Theme, MonacoTheme } from '../../hooks/useTheme';
 
 interface EditorSettingsProps {
   isOpen: boolean;
@@ -9,7 +9,7 @@ interface EditorSettingsProps {
 
 const EditorSettings: React.FC<EditorSettingsProps> = ({ isOpen, onClose }) => {
   const { theme, monacoTheme, setMonacoTheme } = useTheme();
-  const { settings, updateSetting, resetToDefaults } = useEditorSettings();
+  const { settings, updateSetting, resetToDefaults } = useEditorSettingsContext();
   const [activeTab, setActiveTab] = useState<'appearance' | 'behavior' | 'advanced' | 'themes'>('appearance');
 
   if (!isOpen) return null;

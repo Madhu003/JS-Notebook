@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useSnippets } from '../../contexts/SnippetContext';
-import { useTheme, Theme } from '../../contexts/ThemeContext';
-import type { Snippet, CreateSnippetData, UpdateSnippetData } from '../../types';
+import React, { useState } from 'react';
+import { useSnippetsContext } from '../../hooks/useSnippets';
+import { useAuth } from '../../hooks/useAuth';
+import { useTheme, Theme } from '../../hooks/useTheme';
+import type { Snippet, CreateSnippetData } from '../../types';
 
 interface SnippetManagerProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ const SnippetManager: React.FC<SnippetManagerProps> = ({
   onClose, 
   currentLanguage 
 }) => {
+  const { user } = useAuth();
   const { theme } = useTheme();
   const { 
     snippets, 
@@ -21,11 +23,8 @@ const SnippetManager: React.FC<SnippetManagerProps> = ({
     error, 
     createSnippet, 
     updateSnippet, 
-    deleteSnippet, 
-    getSnippetsByLanguage,
-    exportSnippets,
-    importSnippets
-  } = useSnippets();
+    deleteSnippet
+  } = useSnippetsContext(user?.uid || '');
 
   const [activeTab, setActiveTab] = useState<'list' | 'add' | 'edit'>('list');
   const [editingSnippet, setEditingSnippet] = useState<Snippet | null>(null);
@@ -100,7 +99,7 @@ const SnippetManager: React.FC<SnippetManagerProps> = ({
   };
 
   const handleExport = () => {
-    const dataStr = exportSnippets();
+    const dataStr = JSON.stringify(snippets, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
@@ -115,7 +114,24 @@ const SnippetManager: React.FC<SnippetManagerProps> = ({
     
     try {
       const text = await importFile.text();
-      const importedCount = await importSnippets(text);
+      const importedSnippets = JSON.parse(text);
+      let importedCount = 0;
+      
+      for (const snippet of importedSnippets) {
+        try {
+          await createSnippet({
+            name: snippet.name,
+            description: snippet.description,
+            language: snippet.language,
+            code: snippet.code,
+            prefix: snippet.prefix,
+          });
+          importedCount++;
+        } catch (err) {
+          console.error('Failed to import snippet:', snippet.name, err);
+        }
+      }
+      
       alert(`Successfully imported ${importedCount} snippets`);
       setImportFile(null);
     } catch (err) {

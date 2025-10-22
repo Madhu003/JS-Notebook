@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { notebookService } from '../services/notebookService';
 import type { Notebook } from '../services/firebase';
 import InlineEdit from './InlineEdit';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 const LandingPage = () => {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);

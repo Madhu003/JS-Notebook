@@ -1,16 +1,15 @@
 import './App.css'
 import { Link, Route, Routes } from 'react-router-dom'
 import { useState } from 'react'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import LandingPage from './components/LandingPage'
 import ProtectedRoute from './components/ProtectedRoute'
-import { AuthProvider } from './contexts/AuthContext'
-import { useAuth } from './contexts/AuthContext'
-import { ThemeProvider } from './contexts/ThemeContext'
-import { useTheme, Theme } from './contexts/ThemeContext'
-import { SnippetProvider } from './contexts/SnippetContext'
-import { EditorSettingsProvider } from './contexts/EditorSettingsContext'
 import KeyboardShortcuts from './components/KeyboardShortcuts'
 import { default as Notebook } from './components/Notebook'
+import { queryClient } from './lib/queryClient'
+import { useAuth } from './hooks/useAuth'
+import { useTheme, Theme } from './hooks/useTheme'
 
 const AppContent = () => {
   const { user, logout } = useAuth();
@@ -94,15 +93,10 @@ const AppContent = () => {
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <SnippetProvider>
-          <EditorSettingsProvider>
-            <AppContent />
-          </EditorSettingsProvider>
-        </SnippetProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <AppContent />
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   )
 }
 
