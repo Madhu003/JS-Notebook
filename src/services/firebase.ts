@@ -28,6 +28,7 @@ export const auth = getAuth(app);
 export const COLLECTIONS = {
   NOTEBOOKS: 'notebooks',
   USERS: 'users',
+  SNIPPETS: 'snippets',
 } as const;
 
 // Hardcoded user for demo

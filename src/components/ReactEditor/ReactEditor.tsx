@@ -1,9 +1,14 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import type { CodeEditorProps } from '../../types';
 import { LANGUAGES } from '../../constants/languages';
 import { useTheme, Theme } from '../../contexts/ThemeContext';
+import { useSnippets } from '../../contexts/SnippetContext';
+import { useEditorSettings } from '../../contexts/EditorSettingsContext';
+import SnippetManager from '../SnippetManager/SnippetManager';
+import ErrorBoundary from '../ErrorBoundary';
+import EditorSettings from '../EditorSettings/EditorSettings';
 import './ReactEditor.css';
 
 interface ReactEditorProps extends CodeEditorProps {
@@ -24,7 +29,12 @@ const ReactEditor = ({
   error,
   executionTime
 }: ReactEditorProps): JSX.Element => {
-  const { theme } = useTheme();
+  const { theme, monacoTheme } = useTheme();
+  const { getSnippetsByLanguage } = useSnippets();
+  const { settings } = useEditorSettings();
+  const [isSnippetManagerOpen, setIsSnippetManagerOpen] = useState(false);
+  const [isEditorSettingsOpen, setIsEditorSettingsOpen] = useState(false);
+  const [previewSize, setPreviewSize] = useState<'compact' | 'expanded'>('compact');
   
   // Filter languages to only show React related ones
   const reactLanguages = useMemo(() => {
@@ -40,12 +50,12 @@ const ReactEditor = ({
   const handleEditorMount = useCallback((editor: any) => {
     // Configure editor options after mounting
     editor.updateOptions({
-      fontSize: 14,
-      minimap: { enabled: false },
+      fontSize: settings.fontSize,
+      minimap: { enabled: settings.minimap },
       automaticLayout: true,
-      lineNumbers: 'on',
-      tabSize: 2,
-      wordWrap: 'on',
+      lineNumbers: settings.lineNumbers ? 'on' : 'off',
+      tabSize: settings.tabSize,
+      wordWrap: settings.wordWrap ? 'on' : 'off',
       contextmenu: true,
       quickSuggestions: {
         other: true,
@@ -55,9 +65,19 @@ const ReactEditor = ({
       renderLineHighlight: 'all',
       scrollBeyondLastLine: false,
       folding: true,
+      showFoldingControls: settings.showFoldingControls,
+      foldingStrategy: settings.foldingStrategy,
+      foldingHighlight: settings.foldingHighlight,
       bracketPairColorization: { enabled: true },
       formatOnPaste: true,
       formatOnType: true,
+      multiCursorModifier: settings.multiCursorModifier,
+      multiCursorPaste: settings.multiCursorPaste,
+      find: {
+        addExtraSpaceOnTop: settings.findAddExtraSpaceOnTop,
+        autoFindInSelection: settings.findAutoFindInSelection,
+        seedSearchStringFromSelection: settings.findSeedSearchStringFromSelection,
+      },
       suggest: {
         showKeywords: true,
         showSnippets: true,
@@ -67,6 +87,43 @@ const ReactEditor = ({
         showConstructors: true,
       }
     });
+
+    // Register custom snippets
+    const registerSnippets = () => {
+      const snippets = getSnippetsByLanguage(language);
+      const monacoLanguage = language === 'react' ? 'javascript' : 'typescript';
+      
+      // Register completion provider for snippets
+      monaco.languages.registerCompletionItemProvider(monacoLanguage, {
+        provideCompletionItems: (model, position) => {
+          const word = model.getWordUntilPosition(position);
+          const range = {
+            startLineNumber: position.lineNumber,
+            endLineNumber: position.lineNumber,
+            startColumn: word.startColumn,
+            endColumn: word.endColumn,
+          };
+
+          const completionItems = snippets.map(snippet => ({
+            label: snippet.name,
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: snippet.code,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            detail: snippet.description || `Trigger: ${snippet.prefix}`,
+            documentation: snippet.code,
+            range: range,
+            sortText: snippet.prefix,
+          }));
+
+          return {
+            suggestions: completionItems,
+          };
+        },
+      });
+    };
+
+    // Register snippets immediately and when they change
+    registerSnippets();
 
     // Add focus event listener to auto-select the cell
     editor.onDidFocusEditorWidget(() => {
@@ -96,7 +153,7 @@ const ReactEditor = ({
         }, 10);
       }
     });
-  }, [onFocus, cellId]);
+  }, [onFocus, cellId, language, getSnippetsByLanguage, settings]);
 
   const handleChange = useCallback((newValue: string | undefined) => {
     onChange(newValue || '');
@@ -104,29 +161,45 @@ const ReactEditor = ({
 
   return (
     <div className={`flex flex-col min-h-[400px] rounded-lg overflow-hidden ${theme === Theme.Dark ? 'bg-gray-800' : 'bg-white'} shadow-sm transition-colors`}>
-      <div className={`flex items-center gap-2 p-2 ${theme === Theme.Dark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50'} border-b transition-colors`}>
-        <span className={`text-sm font-medium ${theme === Theme.Dark ? 'text-gray-300' : 'text-gray-700'}`}>
-          {language === 'react' ? '⚛️ React' : '⚛️ React TypeScript'}
-        </span>
-        <span className={`text-xs ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'}`}>
-          ⚛️ React Component • Cmd+Enter to run • Cmd+Shift+F to format
-        </span>
+      <div className={`flex items-center justify-between p-2 ${theme === Theme.Dark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50'} border-b transition-colors`}>
+        <div className="flex items-center gap-2">
+          <span className={`text-sm font-medium ${theme === Theme.Dark ? 'text-gray-300' : 'text-gray-700'}`}>
+            {language === 'react' ? '⚛️ React' : '⚛️ React TypeScript'}
+          </span>
+          <span className={`text-xs ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'}`}>
+            ⚛️ React Component • Cmd+Enter to run • Cmd+Shift+F to format
+          </span>
+        </div>
+        <button
+          onClick={() => setIsSnippetManagerOpen(true)}
+          className={`px-2 py-1 text-xs rounded-md ${theme === Theme.Dark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'} transition-colors`}
+          title="Manage code snippets"
+        >
+          📝 Snippets
+        </button>
+        <button
+          onClick={() => setIsEditorSettingsOpen(true)}
+          className={`px-2 py-1 text-xs rounded-md ${theme === Theme.Dark ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'bg-gray-500 hover:bg-gray-600 text-white'} transition-colors`}
+          title="Editor settings"
+        >
+          ⚙️ Settings
+        </button>
       </div>
       <div className="flex flex-1 flex-col min-h-[200px]">
         <Editor
           height="200px"
           language={selectedLanguage.monacoLanguage}
-          theme={theme === Theme.Dark ? 'vs-dark' : 'vs-light'}
+          theme={monacoTheme}
           value={value}
           onChange={handleChange}
           onMount={handleEditorMount}
           options={{
-            fontSize: 14,
-            minimap: { enabled: false },
+            fontSize: settings.fontSize,
+            minimap: { enabled: settings.minimap },
             automaticLayout: true,
-            lineNumbers: 'on',
-            tabSize: 2,
-            wordWrap: 'on',
+            lineNumbers: settings.lineNumbers ? 'on' : 'off',
+            tabSize: settings.tabSize,
+            wordWrap: settings.wordWrap ? 'on' : 'off',
             contextmenu: true,
             quickSuggestions: {
               other: true,
@@ -136,9 +209,19 @@ const ReactEditor = ({
             renderLineHighlight: 'all',
             scrollBeyondLastLine: false,
             folding: true,
+            showFoldingControls: settings.showFoldingControls,
+            foldingStrategy: settings.foldingStrategy,
+            foldingHighlight: settings.foldingHighlight,
             bracketPairColorization: { enabled: true },
             formatOnPaste: true,
             formatOnType: true,
+            multiCursorModifier: settings.multiCursorModifier,
+            multiCursorPaste: settings.multiCursorPaste,
+            find: {
+              addExtraSpaceOnTop: settings.findAddExtraSpaceOnTop,
+              autoFindInSelection: settings.findAutoFindInSelection,
+              seedSearchStringFromSelection: settings.findSeedSearchStringFromSelection,
+            },
             suggest: {
               showKeywords: true,
               showSnippets: true,
@@ -154,20 +237,52 @@ const ReactEditor = ({
       {/* React Preview Section */}
       <div className="mt-4">
         <div className={`border ${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-300'} rounded-lg overflow-hidden`}>
-          <div className={`${theme === Theme.Dark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'} px-3 py-2 text-sm font-medium border-b`}>
-            🎯 Live React Preview
+          <div className={`${theme === Theme.Dark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'} px-3 py-2 text-sm font-medium border-b flex items-center justify-between`}>
+            <div className="flex items-center gap-2">
+              <span>🎯 Live React Preview</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPreviewSize(previewSize === 'compact' ? 'expanded' : 'compact')}
+                className={`px-2 py-1 text-xs rounded ${theme === Theme.Dark ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'} transition-colors`}
+                title={`Switch to ${previewSize === 'compact' ? 'expanded' : 'compact'} view`}
+              >
+                {previewSize === 'compact' ? '📈' : '📉'}
+              </button>
+              <button
+                onClick={() => {
+                  const previewElement = document.getElementById(`react-preview-${cellId}`);
+                  if (previewElement) {
+                    previewElement.innerHTML = '';
+                  }
+                }}
+                className={`px-2 py-1 text-xs rounded ${theme === Theme.Dark ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'} transition-colors`}
+                title="Clear preview"
+              >
+                🗑️
+              </button>
+            </div>
           </div>
-          <div className={`p-4 ${theme === Theme.Dark ? 'bg-gray-800' : 'bg-white'} min-h-[200px]`}>
-            <div id={`react-preview-${cellId}`} className="react-preview-container min-h-[180px]">
-              {/* React component will be rendered here */}
-              <div className={`flex items-center justify-center h-full ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'}`}>
-                <div className="text-center">
-                  <div className="text-4xl mb-2">⚛️</div>
-                  <p>React Preview will appear here after running the code</p>
-                  <p className="text-sm mt-1">Press Cmd+Enter or click Run to execute</p>
+          <div className={`p-4 ${theme === Theme.Dark ? 'bg-gray-800' : 'bg-white'} ${previewSize === 'expanded' ? 'min-h-[400px]' : 'min-h-[200px]'}`}>
+            <ErrorBoundary>
+              <div 
+                id={`react-preview-${cellId}`} 
+                className={`react-preview-container ${previewSize === 'expanded' ? 'min-h-[380px]' : 'min-h-[180px]'} ${theme === Theme.Dark ? 'bg-gray-900' : 'bg-white'} rounded border`}
+              >
+                {/* React component will be rendered here */}
+                <div className={`flex items-center justify-center h-full ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <div className="text-center">
+                    <div className="text-4xl mb-2">⚛️</div>
+                    <p>React Preview will appear here after running the code</p>
+                    <p className="text-sm mt-1">Press Cmd+Enter or click Run to execute</p>
+                    <div className="mt-3 text-xs opacity-75">
+                      <p>💡 Tip: Use console.log() to debug your component</p>
+                      <p>💡 Tip: Return JSX from your component function</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </ErrorBoundary>
           </div>
         </div>
       </div>
@@ -196,6 +311,19 @@ const ReactEditor = ({
           </div>
         </div>
       )}
+      
+      {/* Snippet Manager Modal */}
+      <SnippetManager
+        isOpen={isSnippetManagerOpen}
+        onClose={() => setIsSnippetManagerOpen(false)}
+        currentLanguage={language}
+      />
+      
+      {/* Editor Settings Modal */}
+      <EditorSettings
+        isOpen={isEditorSettingsOpen}
+        onClose={() => setIsEditorSettingsOpen(false)}
+      />
     </div>
   );
 };

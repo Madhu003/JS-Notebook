@@ -1,16 +1,21 @@
 import './App.css'
 import { Link, Route, Routes } from 'react-router-dom'
+import { useState } from 'react'
 import LandingPage from './components/LandingPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider } from './contexts/AuthContext'
 import { useAuth } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { useTheme, Theme } from './contexts/ThemeContext'
+import { SnippetProvider } from './contexts/SnippetContext'
+import { EditorSettingsProvider } from './contexts/EditorSettingsContext'
+import KeyboardShortcuts from './components/KeyboardShortcuts'
 import { default as Notebook } from './components/Notebook'
 
 const AppContent = () => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -32,6 +37,13 @@ const AppContent = () => {
               </span>
             </div>
             <div className="flex items-center gap-4">
+              <button
+                onClick={() => setIsKeyboardShortcutsOpen(true)}
+                className={`p-2 rounded-md ${theme === Theme.Dark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'} transition-colors`}
+                title="Keyboard shortcuts"
+              >
+                ⌨️
+              </button>
               <button
                 onClick={toggleTheme}
                 className={`p-2 rounded-md ${theme === Theme.Dark ? 'text-yellow-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'} transition-colors`}
@@ -70,6 +82,12 @@ const AppContent = () => {
           </ProtectedRoute>
         } />
       </Routes>
+      
+      {/* Keyboard Shortcuts Modal */}
+      <KeyboardShortcuts
+        isOpen={isKeyboardShortcutsOpen}
+        onClose={() => setIsKeyboardShortcutsOpen(false)}
+      />
     </div>
   )
 }
@@ -78,7 +96,11 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppContent />
+        <SnippetProvider>
+          <EditorSettingsProvider>
+            <AppContent />
+          </EditorSettingsProvider>
+        </SnippetProvider>
       </AuthProvider>
     </ThemeProvider>
   )
