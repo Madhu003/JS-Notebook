@@ -7,6 +7,7 @@ import LandingPage from './components/LandingPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import KeyboardShortcuts from './components/KeyboardShortcuts'
 import { default as Notebook } from './components/Notebook'
+import AuthDebugPage from './components/AuthDebugPage'
 import { queryClient } from './lib/queryClient'
 import { useAuth } from './hooks/useAuth'
 import { useTheme, Theme } from './hooks/useTheme'
@@ -75,6 +76,7 @@ const AppContent = () => {
             <LandingPage />
           </ProtectedRoute>
         } />
+        <Route path="/debug-auth" element={<AuthDebugPage />} />
         <Route path="/notebook/:id" element={
           <ProtectedRoute>
             <Notebook />

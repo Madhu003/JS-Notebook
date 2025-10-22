@@ -30,30 +30,67 @@ class AuthService {
 
   // Login with email and password
   async login(email: string, password: string): Promise<AuthUser> {
+    // Validate inputs
+    if (!email || email.trim() === '') {
+      throw new Error('Email is required');
+    }
+    if (!password || password.trim() === '') {
+      throw new Error('Password is required');
+    }
+
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('🔐 Attempting login with email:', email);
+      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
       console.log('✅ User logged in successfully');
       return this.mapFirebaseUser(userCredential.user)!;
     } catch (error) {
+      console.error('🔥 Firebase login error:', error);
       let errorMessage = 'Login failed';
       
       if (error instanceof Error) {
-        switch (error.message) {
-          case 'Firebase: Error (auth/user-not-found).':
+        console.error('🔥 Error message:', error.message);
+        console.error('🔥 Error code:', (error as any).code);
+        
+        // Handle Firebase error codes
+        const errorCode = (error as any).code;
+        switch (errorCode) {
+          case 'auth/user-not-found':
             errorMessage = 'No account found with this email';
             break;
-          case 'Firebase: Error (auth/wrong-password).':
+          case 'auth/wrong-password':
             errorMessage = 'Incorrect password';
             break;
-          case 'Firebase: Error (auth/invalid-email).':
+          case 'auth/invalid-email':
             errorMessage = 'Invalid email address';
             break;
-          case 'Firebase: Error (auth/user-disabled).':
+          case 'auth/user-disabled':
             errorMessage = 'This account has been disabled';
             break;
-          case 'Firebase: Error (auth/too-many-requests).':
+          case 'auth/too-many-requests':
             errorMessage = 'Too many failed attempts. Please try again later';
             break;
+          case 'auth/missing-email':
+            errorMessage = 'Email is required';
+            break;
+          default:
+            // Fallback to message parsing for older Firebase versions
+            switch (error.message) {
+              case 'Firebase: Error (auth/user-not-found).':
+                errorMessage = 'No account found with this email';
+                break;
+              case 'Firebase: Error (auth/wrong-password).':
+                errorMessage = 'Incorrect password';
+                break;
+              case 'Firebase: Error (auth/invalid-email).':
+                errorMessage = 'Invalid email address';
+                break;
+              case 'Firebase: Error (auth/user-disabled).':
+                errorMessage = 'This account has been disabled';
+                break;
+              case 'Firebase: Error (auth/too-many-requests).':
+                errorMessage = 'Too many failed attempts. Please try again later';
+                break;
+            }
         }
       }
       
@@ -63,8 +100,20 @@ class AuthService {
 
   // Register with email and password
   async register(email: string, password: string, displayName: string): Promise<AuthUser> {
+    // Validate inputs
+    if (!email || email.trim() === '') {
+      throw new Error('Email is required');
+    }
+    if (!password || password.trim() === '') {
+      throw new Error('Password is required');
+    }
+    if (!displayName || displayName.trim() === '') {
+      throw new Error('Display name is required');
+    }
+
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      console.log('📝 Attempting registration with email:', email);
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
       
       // Update the user profile with display name
       await updateProfile(userCredential.user, {

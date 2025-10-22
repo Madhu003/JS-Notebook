@@ -10,16 +10,20 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🔍 Form submission - Email:', email, 'Password length:', password.length);
+    
     if (!email || !password) {
+      console.warn('⚠️ Missing email or password');
       return;
     }
 
     try {
       setLoading(true);
+      console.log('🚀 Calling login with:', { email, passwordLength: password.length });
       await login(email, password);
     } catch (error) {
       // Error is handled by the auth hook
-      console.error('Authentication error:', error);
+      console.error('❌ Authentication error:', error);
     } finally {
       setLoading(false);
     }

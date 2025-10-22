@@ -78,9 +78,10 @@ export const useAuth = () => {
   return {
     user,
     loading,
-    error: error?.message || null,
-    login: loginMutation.mutateAsync,
-    register: registerMutation.mutateAsync,
+    error: error?.message || loginMutation.error?.message || registerMutation.error?.message || null,
+    login: (email: string, password: string) => loginMutation.mutateAsync({ email, password }),
+    register: (email: string, password: string, displayName: string) => 
+      registerMutation.mutateAsync({ email, password, displayName }),
     logout: logoutMutation.mutateAsync,
     isLoggingIn: loginMutation.isPending,
     isRegistering: registerMutation.isPending,
