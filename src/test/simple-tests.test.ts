@@ -132,7 +132,7 @@ describe('JS-Notebook Logic Tests', () => {
 
   it('should validate notebook titles', () => {
     const isValidTitle = (title: string) => {
-      return title && title.trim().length > 0 && title.length <= 100
+      return Boolean(title && title.trim().length > 0 && title.length <= 100)
     }
 
     expect(isValidTitle('My Notebook')).toBe(true)

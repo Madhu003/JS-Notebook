@@ -25,4 +25,12 @@ export default defineConfig({
   define: {
     global: 'globalThis',
   },
+  resolve: {
+    alias: {
+      'monaco-editor': 'monaco-editor/esm/vs/editor/editor.api.js',
+    },
+  },
+  optimizeDeps: {
+    exclude: ['monaco-editor'],
+  },
 })
