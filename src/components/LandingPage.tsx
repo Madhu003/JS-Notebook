@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { notebookService } from '../services/notebookService';
 import type { Notebook } from '../services/firebase';
 import InlineEdit from './InlineEdit';
 import { Button } from './common';
 import { useAuth } from '../hooks/useAuth';
+import AddIcon from '@mui/icons-material/Add';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import WarningIcon from '@mui/icons-material/Warning';
+import PublicIcon from '@mui/icons-material/Public';
+import LockIcon from '@mui/icons-material/Lock';
+import DescriptionIcon from '@mui/icons-material/Description';
 
 const LandingPage = () => {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
@@ -127,7 +133,7 @@ const LandingPage = () => {
               variant="primary"
               size="lg"
             >
-              {!creating && <span className="mr-2">➕</span>}
+              {!creating && <AddIcon className="mr-2" />}
               Create New Notebook
             </Button>
             
@@ -138,7 +144,7 @@ const LandingPage = () => {
               variant="success"
               size="lg"
             >
-              {!creating && <span className="mr-2">📚</span>}
+              {!creating && <LibraryBooksIcon className="mr-2" />}
               Create Sample Notebook
             </Button>
 
@@ -147,7 +153,7 @@ const LandingPage = () => {
               variant="neutral"
               size="lg"
             >
-              <span className="mr-2">🔄</span>
+              <RefreshIcon className="mr-2" />
               Refresh
             </Button>
           </div>
@@ -158,7 +164,7 @@ const LandingPage = () => {
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex">
               <div className="flex-shrink-0">
-                <span className="text-red-400 text-xl">⚠️</span>
+                <WarningIcon className="text-red-400" />
               </div>
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-red-800">Error</h3>
@@ -177,15 +183,18 @@ const LandingPage = () => {
         {/* Notebooks Grid */}
         {notebooks.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-gray-400 text-6xl mb-4">📝</div>
+            <div className="text-gray-400 mb-4 flex justify-center">
+              <DescriptionIcon style={{ fontSize: 60 }} />
+            </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No notebooks yet</h3>
             <p className="text-gray-500 mb-6">Create your first notebook to get started!</p>
-            <button
+            <Button
               onClick={handleCreateNewNotebook}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
+              variant="primary"
+              size="lg"
             >
               Create Your First Notebook
-            </button>
+            </Button>
           </div>
         ) : (
           <>
@@ -214,12 +223,12 @@ const LandingPage = () => {
                       </div>
                       <div className="flex items-center ml-4">
                         {notebook.isPublic ? (
-                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                            🌐 Public
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded flex items-center gap-1">
+                            <PublicIcon style={{ fontSize: 14 }} /> Public
                           </span>
                         ) : (
-                          <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
-                            🔒 Private
+                          <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded flex items-center gap-1">
+                            <LockIcon style={{ fontSize: 14 }} /> Private
                           </span>
                         )}
                       </div>
@@ -246,18 +255,21 @@ const LandingPage = () => {
 
                     {/* Actions */}
                     <div className="flex space-x-2">
-                      <Link
-                        to={`/notebook/${notebook.id}`}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-center px-4 py-2 rounded-sm text-sm font-medium transition-colors"
-                      >
-                        Open
-                      </Link>
-                      <button
+                      <div className="flex-1">
+                        <Button
+                          onClick={() => window.location.href = `/notebook/${notebook.id}`}
+                          variant="primary"
+                          className="w-full"
+                        >
+                          Open
+                        </Button>
+                      </div>
+                      <Button
                         onClick={() => handleDeleteNotebook(notebook.id, notebook.title)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-sm text-sm font-medium transition-colors"
+                        variant="danger"
                       >
                         Delete
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>

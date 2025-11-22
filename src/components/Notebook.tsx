@@ -17,6 +17,19 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { formatCode } from '../utils/formatting';
 import { exportToPDF } from '../utils/export';
 import { babelService } from '../services/babelService';
+import SaveIcon from '@mui/icons-material/Save';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DeleteIcon from '@mui/icons-material/Delete';
+import UnfoldLessIcon from '@mui/icons-material/UnfoldLess';
+import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
+import DescriptionIcon from '@mui/icons-material/Description';
+import LightbulbIcon from '@mui/icons-material/Lightbulb';
+import TouchAppIcon from '@mui/icons-material/TouchApp';
 
 const Notebook = (): JSX.Element => {
   const { id } = useParams<{ id: string }>();
@@ -740,7 +753,7 @@ const Notebook = (): JSX.Element => {
               onClick={() => navigate('/')}
               className={`${theme === Theme.Dark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'} flex items-center gap-2 transition-colors`}
             >
-              <span>←</span>
+              <ArrowBackIcon />
               <span>Back to Home</span>
             </button>
             
@@ -771,7 +784,7 @@ const Notebook = (): JSX.Element => {
               {saving ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
               ) : (
-                <span>💾</span>
+                <SaveIcon />
               )}
               <span>Save</span>
             </button>
@@ -795,9 +808,7 @@ const Notebook = (): JSX.Element => {
                 <option value="markdown-">📄 Markdown</option>
               </select>
               <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <ExpandMoreIcon className="text-white" />
               </div>
             </div>
 
@@ -805,9 +816,10 @@ const Notebook = (): JSX.Element => {
               type="button"
               onClick={handleExportToPDF}
               data-pdf-button
-              className={`px-4 py-2 ${theme === Theme.Dark ? 'bg-purple-600 hover:bg-purple-700' : 'bg-purple-500 hover:bg-purple-600'} text-white rounded transition-colors`}
+              className={`px-4 py-2 ${theme === Theme.Dark ? 'bg-purple-600 hover:bg-purple-700' : 'bg-purple-500 hover:bg-purple-600'} text-white rounded transition-colors flex items-center gap-2`}
             >
-              📄 PDF
+              <PictureAsPdfIcon />
+              <span>PDF</span>
             </button>
 
           </div>
@@ -872,12 +884,14 @@ const Notebook = (): JSX.Element => {
                             </div>
                             <div className="flex items-center gap-2">
                               {cell.type === 'code' ? (
-                                <span className={`text-xs ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                  💡 Cmd+Enter to run • Cmd+Shift+F to format
+                                <span className={`text-xs ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'} flex items-center gap-1`}>
+                                  <LightbulbIcon style={{ fontSize: 14 }} />
+                                  Cmd+Enter to run • Cmd+Shift+F to format
                                 </span>
                               ) : (
-                                <span className={`text-xs ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                  👆 Click cell to edit
+                                <span className={`text-xs ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'} flex items-center gap-1`}>
+                                  <TouchAppIcon style={{ fontSize: 14 }} />
+                                  Click cell to edit
                                 </span>
                               )}
                             </div>
@@ -893,9 +907,10 @@ const Notebook = (): JSX.Element => {
                               <button 
                                 type="button"
                                 onClick={() => runCode(cell.id)}
-                                className={`text-sm ${theme === Theme.Dark ? 'text-gray-300 hover:text-white bg-gray-600 hover:bg-gray-500' : 'text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-50'} px-3 py-1 rounded border transition-colors`}
+                                className={`text-sm ${theme === Theme.Dark ? 'text-gray-300 hover:text-white bg-gray-600 hover:bg-gray-500' : 'text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-50'} px-3 py-1 rounded border transition-colors flex items-center gap-1`}
                               >
-                                ▶️ Run
+                                <PlayArrowIcon fontSize="small" />
+                                <span>Run</span>
                               </button>
                               
                               {isCodeCell(cell) && (
@@ -904,9 +919,10 @@ const Notebook = (): JSX.Element => {
                                   <button 
                                     type="button"
                                     onClick={() => formatCodeCell(cell.id)}
-                                    className={`text-sm ${theme === Theme.Dark ? 'text-blue-400 hover:text-blue-300 bg-gray-600 hover:bg-gray-500' : 'text-blue-500 hover:text-blue-700 bg-white hover:bg-blue-50'} px-3 py-1 rounded border transition-colors`}
+                                    className={`text-sm ${theme === Theme.Dark ? 'text-blue-400 hover:text-blue-300 bg-gray-600 hover:bg-gray-500' : 'text-blue-500 hover:text-blue-700 bg-white hover:bg-blue-50'} px-3 py-1 rounded border transition-colors flex items-center gap-1`}
                                   >
-                                    ✨ Format
+                                    <AutoFixHighIcon fontSize="small" />
+                                    <span>Format</span>
                                   </button>
 
                                   <button 
@@ -919,17 +935,28 @@ const Notebook = (): JSX.Element => {
                                         handleContentChange(cell.id, boilerplate);
                                       }
                                     }}
-                                    className={`text-sm ${theme === Theme.Dark ? 'text-yellow-400 hover:text-yellow-300 bg-gray-600 hover:bg-gray-500' : 'text-yellow-600 hover:text-yellow-700 bg-white hover:bg-yellow-50'} px-3 py-1 rounded border transition-colors`}
+                                    className={`text-sm ${theme === Theme.Dark ? 'text-yellow-400 hover:text-yellow-300 bg-gray-600 hover:bg-gray-500' : 'text-yellow-600 hover:text-yellow-700 bg-white hover:bg-yellow-50'} px-3 py-1 rounded border transition-colors flex items-center gap-1`}
                                   >
-                                    📝 Template
+                                    <DescriptionIcon fontSize="small" />
+                                    <span>Template</span>
                                   </button>
 
                                   <button
                                     type="button"
                                     onClick={() => toggleCellCollapse(cell.id)}
-                                    className={`text-sm ${theme === Theme.Dark ? 'text-gray-300 hover:text-white bg-gray-600 hover:bg-gray-500' : 'text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-50'} px-3 py-1 rounded border transition-colors`}
+                                    className={`text-sm ${theme === Theme.Dark ? 'text-gray-300 hover:text-white bg-gray-600 hover:bg-gray-500' : 'text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-50'} px-3 py-1 rounded border transition-colors flex items-center gap-1`}
                                   >
-                                    {cell.isCollapsed ? '📖 Expand' : '📘 Collapse'}
+                                    {cell.isCollapsed ? (
+                                      <>
+                                        <UnfoldMoreIcon fontSize="small" />
+                                        <span>Expand</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <UnfoldLessIcon fontSize="small" />
+                                        <span>Collapse</span>
+                                      </>
+                                    )}
                                   </button>
                                 </>
                               )}
@@ -937,17 +964,19 @@ const Notebook = (): JSX.Element => {
                               <button 
                                 type="button"
                                 onClick={() => duplicateCell(cell.id)}
-                                className={`text-sm ${theme === Theme.Dark ? 'text-green-400 hover:text-green-300 bg-gray-600 hover:bg-gray-500' : 'text-green-600 hover:text-green-700 bg-white hover:bg-green-50'} px-3 py-1 rounded border transition-colors`}
+                                className={`text-sm ${theme === Theme.Dark ? 'text-green-400 hover:text-green-300 bg-gray-600 hover:bg-gray-500' : 'text-green-600 hover:text-green-700 bg-white hover:bg-green-50'} px-3 py-1 rounded border transition-colors flex items-center gap-1`}
                               >
-                                📋 Duplicate
+                                <ContentCopyIcon fontSize="small" />
+                                <span>Duplicate</span>
                               </button>
                               
                               <button 
                                 type="button"
                                 onClick={() => deleteCell(cell.id)}
-                                className={`text-sm ${theme === Theme.Dark ? 'text-red-400 hover:text-red-300 bg-gray-600 hover:bg-gray-500' : 'text-red-600 hover:text-red-700 bg-white hover:bg-red-50'} px-3 py-1 rounded border transition-colors`}
+                                className={`text-sm ${theme === Theme.Dark ? 'text-red-400 hover:text-red-300 bg-gray-600 hover:bg-gray-500' : 'text-red-600 hover:text-red-700 bg-white hover:bg-red-50'} px-3 py-1 rounded border transition-colors flex items-center gap-1`}
                               >
-                                🗑️ Delete
+                                <DeleteIcon fontSize="small" />
+                                <span>Delete</span>
                               </button>
                             </div>
                           </div>

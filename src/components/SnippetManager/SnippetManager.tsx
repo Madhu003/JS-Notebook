@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
-import { useSnippetsContext } from '../../hooks/useSnippets';
-import { useAuth } from '../../hooks/useAuth';
+import { useSnippets, useCreateSnippet, useUpdateSnippet, useDeleteSnippet, useImportSnippets } from '../../hooks/useSnippetsQuery';
 import { useTheme, Theme } from '../../hooks/useTheme';
 import type { Snippet, CreateSnippetData } from '../../types';
+import { Button } from '../common';
+import CloseIcon from '@mui/icons-material/Close';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import UploadIcon from '@mui/icons-material/Upload';
+import DownloadIcon from '@mui/icons-material/Download';
+import ListIcon from '@mui/icons-material/List';
+import DescriptionIcon from '@mui/icons-material/Description';
 
 interface SnippetManagerProps {
   isOpen: boolean;
@@ -15,16 +23,22 @@ const SnippetManager: React.FC<SnippetManagerProps> = ({
   onClose, 
   currentLanguage 
 }) => {
-  const { user } = useAuth();
   const { theme } = useTheme();
-  const { 
-    snippets, 
-    loading, 
-    error, 
-    createSnippet, 
-    updateSnippet, 
-    deleteSnippet
-  } = useSnippetsContext(user?.uid || '');
+  
+  // React Query hooks
+  const { data: snippets = [], isLoading: loading, error: queryError } = useSnippets();
+  const createSnippetMutation = useCreateSnippet();
+  const updateSnippetMutation = useUpdateSnippet();
+  const deleteSnippetMutation = useDeleteSnippet();
+  const importSnippetsMutation = useImportSnippets();
+
+  // Derived error state
+  const error = queryError instanceof Error ? queryError.message : 
+                createSnippetMutation.error instanceof Error ? createSnippetMutation.error.message :
+                updateSnippetMutation.error instanceof Error ? updateSnippetMutation.error.message :
+                deleteSnippetMutation.error instanceof Error ? deleteSnippetMutation.error.message :
+                importSnippetsMutation.error instanceof Error ? importSnippetsMutation.error.message :
+                null;
 
   const [activeTab, setActiveTab] = useState<'list' | 'add' | 'edit'>('list');
   const [editingSnippet, setEditingSnippet] = useState<Snippet | null>(null);
@@ -64,10 +78,10 @@ const SnippetManager: React.FC<SnippetManagerProps> = ({
     e.preventDefault();
     try {
       if (editingSnippet) {
-        await updateSnippet(editingSnippet.id, formData);
+        await updateSnippetMutation.mutateAsync({ id: editingSnippet.id, data: formData });
         setEditingSnippet(null);
       } else {
-        await createSnippet(formData);
+        await createSnippetMutation.mutateAsync(formData);
       }
       resetForm();
       setActiveTab('list');
@@ -91,7 +105,7 @@ const SnippetManager: React.FC<SnippetManagerProps> = ({
   const handleDelete = async (snippet: Snippet) => {
     if (window.confirm(`Are you sure you want to delete "${snippet.name}"?`)) {
       try {
-        await deleteSnippet(snippet.id);
+        await deleteSnippetMutation.mutateAsync(snippet.id);
       } catch (err) {
         console.error('Failed to delete snippet:', err);
       }
@@ -114,23 +128,10 @@ const SnippetManager: React.FC<SnippetManagerProps> = ({
     
     try {
       const text = await importFile.text();
-      const importedSnippets = JSON.parse(text);
-      let importedCount = 0;
+      // Validate JSON first
+      JSON.parse(text); 
       
-      for (const snippet of importedSnippets) {
-        try {
-          await createSnippet({
-            name: snippet.name,
-            description: snippet.description,
-            language: snippet.language,
-            code: snippet.code,
-            prefix: snippet.prefix,
-          });
-          importedCount++;
-        } catch (err) {
-          console.error('Failed to import snippet:', snippet.name, err);
-        }
-      }
+      const importedCount = await importSnippetsMutation.mutateAsync(text);
       
       alert(`Successfully imported ${importedCount} snippets`);
       setImportFile(null);
@@ -147,15 +148,20 @@ const SnippetManager: React.FC<SnippetManagerProps> = ({
       <div className={`w-full max-w-4xl max-h-[90vh] ${theme === Theme.Dark ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-xl overflow-hidden`}>
         {/* Header */}
         <div className={`${theme === Theme.Dark ? 'bg-gray-700' : 'bg-gray-100'} px-6 py-4 border-b flex items-center justify-between`}>
-          <h2 className={`text-xl font-semibold ${theme === Theme.Dark ? 'text-white' : 'text-gray-800'}`}>
-            📝 Code Snippets Manager
-          </h2>
-          <button
+          <div className="flex items-center gap-2">
+            <DescriptionIcon className={theme === Theme.Dark ? 'text-white' : 'text-gray-800'} />
+            <h2 className={`text-xl font-semibold ${theme === Theme.Dark ? 'text-white' : 'text-gray-800'}`}>
+              Code Snippets Manager
+            </h2>
+          </div>
+          <Button
             onClick={onClose}
-            className={`p-2 rounded-md ${theme === Theme.Dark ? 'text-gray-400 hover:text-white hover:bg-gray-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'} transition-colors`}
+            variant="ghost"
+            size="icon"
+            className={theme === Theme.Dark ? 'text-gray-400 hover:text-white hover:bg-gray-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'}
           >
-            ✕
-          </button>
+            <CloseIcon />
+          </Button>
         </div>
 
         {/* Tabs */}
@@ -163,13 +169,14 @@ const SnippetManager: React.FC<SnippetManagerProps> = ({
           <div className="flex space-x-4">
             <button
               onClick={() => setActiveTab('list')}
-              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${
                 activeTab === 'list'
                   ? theme === Theme.Dark ? 'bg-gray-600 text-white' : 'bg-white text-gray-800'
                   : theme === Theme.Dark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              📋 All Snippets
+              <ListIcon fontSize="small" />
+              All Snippets
             </button>
             <button
               onClick={() => {
@@ -177,24 +184,26 @@ const SnippetManager: React.FC<SnippetManagerProps> = ({
                 setEditingSnippet(null);
                 setActiveTab('add');
               }}
-              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${
                 activeTab === 'add'
                   ? theme === Theme.Dark ? 'bg-gray-600 text-white' : 'bg-white text-gray-800'
                   : theme === Theme.Dark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              ➕ Add New
+              <AddIcon fontSize="small" />
+              Add New
             </button>
             {editingSnippet && (
               <button
                 onClick={() => setActiveTab('edit')}
-                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${
                   activeTab === 'edit'
                     ? theme === Theme.Dark ? 'bg-gray-600 text-white' : 'bg-white text-gray-800'
                     : theme === Theme.Dark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'
                 }`}
               >
-                ✏️ Edit
+                <EditIcon fontSize="small" />
+                Edit
               </button>
             )}
           </div>
@@ -234,12 +243,14 @@ const SnippetManager: React.FC<SnippetManagerProps> = ({
 
               {/* Import/Export */}
               <div className="mb-4 flex gap-2">
-                <button
+                <Button
                   onClick={handleExport}
-                  className={`px-3 py-2 text-sm rounded-md ${theme === Theme.Dark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'} transition-colors`}
+                  variant="primary"
+                  size="sm"
                 >
-                  📤 Export
-                </button>
+                  <UploadIcon fontSize="small" className="mr-2" />
+                  Export
+                </Button>
                 <input
                   type="file"
                   accept=".json"
@@ -249,17 +260,19 @@ const SnippetManager: React.FC<SnippetManagerProps> = ({
                 />
                 <label
                   htmlFor="import-file"
-                  className={`px-3 py-2 text-sm rounded-md cursor-pointer ${theme === Theme.Dark ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-green-500 hover:bg-green-600 text-white'} transition-colors`}
+                  className={`px-3 py-2 text-sm rounded-md cursor-pointer ${theme === Theme.Dark ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-green-500 hover:bg-green-600 text-white'} transition-colors flex items-center gap-2 shadow-md hover:shadow-lg`}
                 >
-                  📥 Import
+                  <DownloadIcon fontSize="small" />
+                  Import
                 </label>
                 {importFile && (
-                  <button
+                  <Button
                     onClick={handleImport}
-                    className={`px-3 py-2 text-sm rounded-md ${theme === Theme.Dark ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-green-500 hover:bg-green-600 text-white'} transition-colors`}
+                    variant="success"
+                    size="sm"
                   >
                     Import {importFile.name}
-                  </button>
+                  </Button>
                 )}
               </div>
 
@@ -302,20 +315,24 @@ const SnippetManager: React.FC<SnippetManagerProps> = ({
                           </pre>
                         </div>
                         <div className="flex gap-2 ml-4">
-                          <button
+                          <Button
                             onClick={() => handleEdit(snippet)}
-                            className={`p-2 rounded-md ${theme === Theme.Dark ? 'text-blue-400 hover:bg-gray-600' : 'text-blue-600 hover:bg-gray-200'} transition-colors`}
+                            variant="ghost"
+                            size="icon"
                             title="Edit snippet"
+                            className={theme === Theme.Dark ? 'text-blue-400 hover:bg-gray-600' : 'text-blue-600 hover:bg-gray-200'}
                           >
-                            ✏️
-                          </button>
-                          <button
+                            <EditIcon fontSize="small" />
+                          </Button>
+                          <Button
                             onClick={() => handleDelete(snippet)}
-                            className={`p-2 rounded-md ${theme === Theme.Dark ? 'text-red-400 hover:bg-gray-600' : 'text-red-600 hover:bg-gray-200'} transition-colors`}
+                            variant="ghost"
+                            size="icon"
                             title="Delete snippet"
+                            className={theme === Theme.Dark ? 'text-red-400 hover:bg-gray-600' : 'text-red-600 hover:bg-gray-200'}
                           >
-                            🗑️
-                          </button>
+                            <DeleteIcon fontSize="small" />
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -404,23 +421,24 @@ const SnippetManager: React.FC<SnippetManagerProps> = ({
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button
+                <Button
                   type="submit"
-                  className={`px-4 py-2 rounded-md ${theme === Theme.Dark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'} transition-colors`}
+                  variant="primary"
+                  isLoading={createSnippetMutation.isPending || updateSnippetMutation.isPending}
                 >
                   {editingSnippet ? 'Update Snippet' : 'Create Snippet'}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={() => {
                     resetForm();
                     setEditingSnippet(null);
                     setActiveTab('list');
                   }}
-                  className={`px-4 py-2 rounded-md ${theme === Theme.Dark ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'bg-gray-500 hover:bg-gray-600 text-white'} transition-colors`}
+                  variant="neutral"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </form>
           )}

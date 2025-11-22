@@ -11,6 +11,11 @@ import AuthDebugPage from './components/AuthDebugPage'
 import { queryClient } from './lib/queryClient'
 import { useAuth } from './hooks/useAuth'
 import { useTheme, Theme } from './hooks/useTheme'
+import KeyboardIcon from '@mui/icons-material/Keyboard';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import PersonIcon from '@mui/icons-material/Person';
+import LogoutIcon from '@mui/icons-material/Logout';
 
 const AppContent = () => {
   const { user, logout } = useAuth();
@@ -42,26 +47,27 @@ const AppContent = () => {
                 className={`p-2 rounded-md ${theme === Theme.Dark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'} transition-colors`}
                 title="Keyboard shortcuts"
               >
-                ⌨️
+                <KeyboardIcon />
               </button>
               <button
                 onClick={toggleTheme}
                 className={`p-2 rounded-md ${theme === Theme.Dark ? 'text-yellow-400 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'} transition-colors`}
                 title="Toggle theme"
               >
-                {theme === Theme.Dark ? '🌞' : '🌙'}
+                {theme === Theme.Dark ? <LightModeIcon /> : <DarkModeIcon />}
               </button>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">👤</span>
+                  <PersonIcon className={theme === Theme.Dark ? 'text-gray-300' : 'text-gray-700'} />
                   <span className={`text-sm ${theme === Theme.Dark ? 'text-gray-300' : 'text-gray-700'}`}>
                     {user.displayName || user.email}
                   </span>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className={`text-sm text-red-600 hover:text-red-800 px-3 py-1 rounded border border-red-300 hover:bg-red-50 transition-colors`}
+                  className={`text-sm text-red-600 hover:text-red-800 px-3 py-1 rounded border border-red-300 hover:bg-red-50 transition-colors flex items-center gap-1`}
                 >
+                  <LogoutIcon fontSize="small" />
                   Logout
                 </button>
               </div>
