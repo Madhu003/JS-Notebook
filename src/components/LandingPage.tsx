@@ -11,6 +11,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import PublicIcon from '@mui/icons-material/Public';
 import LockIcon from '@mui/icons-material/Lock';
 import DescriptionIcon from '@mui/icons-material/Description';
+import CircularProgress from '@mui/material/CircularProgress';
 
 const LandingPage = () => {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
@@ -112,7 +113,7 @@ const LandingPage = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <CircularProgress size={48} className="text-blue-600 mx-auto" />
           <p className="mt-4 text-gray-600">Loading notebooks...</p>
         </div>
       </div>

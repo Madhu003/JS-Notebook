@@ -30,6 +30,7 @@ import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import DescriptionIcon from '@mui/icons-material/Description';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import TouchAppIcon from '@mui/icons-material/TouchApp';
+import CircularProgress from '@mui/material/CircularProgress';
 
 const Notebook = (): JSX.Element => {
   const { id } = useParams<{ id: string }>();
@@ -718,7 +719,11 @@ const Notebook = (): JSX.Element => {
     return (
       <div className={`min-h-screen ${theme === Theme.Dark ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}>
         <div className="text-center">
-          <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${theme === Theme.Dark ? 'border-blue-400' : 'border-blue-600'} mx-auto`}></div>
+          <CircularProgress 
+            size={48} 
+            className={theme === Theme.Dark ? 'text-blue-400' : 'text-blue-600'} 
+            sx={{ color: theme === Theme.Dark ? '#60a5fa' : '#2563eb' }}
+          />
           <p className={`mt-4 ${theme === Theme.Dark ? 'text-gray-300' : 'text-gray-600'}`}>Loading notebook...</p>
         </div>
       </div>
