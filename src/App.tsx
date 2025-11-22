@@ -11,6 +11,9 @@ import AuthDebugPage from './components/AuthDebugPage'
 import { queryClient } from './lib/queryClient'
 import { useAuth } from './hooks/useAuth'
 import { useTheme, Theme } from './hooks/useTheme'
+import { AuthProvider } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
+import { EditorSettingsProvider } from './contexts/EditorSettingsContext'
 import KeyboardIcon from '@mui/icons-material/Keyboard';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
@@ -102,8 +105,14 @@ const AppContent = () => {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppContent />
-      <ReactQueryDevtools initialIsOpen={false} />
+      <AuthProvider>
+        <ThemeProvider>
+          <EditorSettingsProvider>
+            <AppContent />
+            <ReactQueryDevtools initialIsOpen={false} />
+          </EditorSettingsProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </QueryClientProvider>
   )
 }
