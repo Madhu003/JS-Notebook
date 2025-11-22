@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { cn } from '../lib/utils';
 
 interface InlineEditProps {
   value: string;
@@ -83,7 +84,10 @@ const InlineEdit = ({ value, onSave, onChange, className = '', placeholder = 'En
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}
             onBlur={handleSave}
-            className={`${className} resize-none overflow-hidden border border-blue-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+            className={cn(
+              className,
+              "resize-none overflow-hidden border border-blue-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            )}
             placeholder={placeholder}
             rows={Math.max(2, Math.ceil(editValue.length / 50))}
           />
@@ -95,7 +99,10 @@ const InlineEdit = ({ value, onSave, onChange, className = '', placeholder = 'En
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}
             onBlur={handleSave}
-            className={`${className} border border-blue-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+            className={cn(
+              className,
+              "border border-blue-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            )}
             placeholder={placeholder}
             disabled={saving}
           />
@@ -119,7 +126,10 @@ const InlineEdit = ({ value, onSave, onChange, className = '', placeholder = 'En
   return (
     <button
       onClick={handleStartEdit}
-      className={`${className} hover:bg-gray-100 rounded px-2 py-1 -mx-2 -my-1 transition-colors text-left min-w-[100px] group`}
+      className={cn(
+        className,
+        "hover:bg-gray-100 rounded px-2 py-1 -mx-2 -my-1 transition-colors text-left min-w-[100px] group"
+      )}
       title="Click to edit"
     >
       <span className="relative">

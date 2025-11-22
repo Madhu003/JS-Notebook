@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { notebookService } from '../services/notebookService';
 import type { Notebook } from '../services/firebase';
 import InlineEdit from './InlineEdit';
+import { Button } from './common';
 import { useAuth } from '../hooks/useAuth';
 
 const LandingPage = () => {
@@ -119,39 +120,36 @@ const LandingPage = () => {
         {/* Action Buttons */}
         <div className="mb-8">
           <div className="flex flex-wrap gap-4">
-            <button
+            <Button
               onClick={handleCreateNewNotebook}
               disabled={creating}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center"
+              isLoading={creating}
+              variant="primary"
+              size="lg"
             >
-              {creating ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              ) : (
-                <span className="mr-2">➕</span>
-              )}
+              {!creating && <span className="mr-2">➕</span>}
               Create New Notebook
-            </button>
+            </Button>
             
-            <button
+            <Button
               onClick={handleCreateSample}
               disabled={creating}
-              className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center"
+              isLoading={creating}
+              variant="success"
+              size="lg"
             >
-              {creating ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              ) : (
-                <span className="mr-2">📚</span>
-              )}
+              {!creating && <span className="mr-2">📚</span>}
               Create Sample Notebook
-            </button>
+            </Button>
 
-            <button
+            <Button
               onClick={loadNotebooks}
-              className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center"
+              variant="neutral"
+              size="lg"
             >
               <span className="mr-2">🔄</span>
               Refresh
-            </button>
+            </Button>
           </div>
         </div>
 
