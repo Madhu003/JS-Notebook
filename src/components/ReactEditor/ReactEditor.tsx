@@ -10,6 +10,7 @@ import { useEditorSettingsContext } from '../../hooks/useEditorSettings';
 import SnippetManager from '../SnippetManager/SnippetManager';
 import ErrorBoundary from '../ErrorBoundary';
 import EditorSettings from '../EditorSettings/EditorSettings';
+import PackageManager from '../PackageManager/PackageManager';
 import './ReactEditor.css';
 
 interface ReactEditorProps extends CodeEditorProps {
@@ -36,6 +37,7 @@ const ReactEditor = ({
   const { settings } = useEditorSettingsContext();
   const [isSnippetManagerOpen, setIsSnippetManagerOpen] = useState(false);
   const [isEditorSettingsOpen, setIsEditorSettingsOpen] = useState(false);
+  const [isPackageManagerOpen, setIsPackageManagerOpen] = useState(false);
   const [previewSize, setPreviewSize] = useState<'compact' | 'expanded'>('compact');
   
   // Filter languages to only show React related ones
@@ -180,6 +182,13 @@ const ReactEditor = ({
           Snippets
         </button>
         <button
+          onClick={() => setIsPackageManagerOpen(true)}
+          className={`px-2 py-1 text-xs rounded-md ${theme === Theme.Dark ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-green-500 hover:bg-green-600 text-white'} transition-colors`}
+          title="Manage NPM packages"
+        >
+          Packages
+        </button>
+        <button
           onClick={() => setIsEditorSettingsOpen(true)}
           className={`px-2 py-1 text-xs rounded-md ${theme === Theme.Dark ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'bg-gray-500 hover:bg-gray-600 text-white'} transition-colors`}
           title="Editor settings"
@@ -318,6 +327,12 @@ const ReactEditor = ({
         isOpen={isSnippetManagerOpen}
         onClose={() => setIsSnippetManagerOpen(false)}
         currentLanguage={language}
+      />
+      
+      {/* Package Manager Modal */}
+      <PackageManager
+        isOpen={isPackageManagerOpen}
+        onClose={() => setIsPackageManagerOpen(false)}
       />
       
       {/* Editor Settings Modal */}

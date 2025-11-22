@@ -10,6 +10,7 @@ import { useEditorSettingsContext } from '../../hooks/useEditorSettings';
 import SnippetManager from '../SnippetManager/SnippetManager';
 import OutputVisualizer from '../OutputVisualizer';
 import EditorSettings from '../EditorSettings/EditorSettings';
+import PackageManager from '../PackageManager/PackageManager';
 import './JavaScriptEditor.css';
 
 interface JavaScriptEditorProps extends CodeEditorProps {
@@ -36,6 +37,7 @@ const JavaScriptEditor = ({
   const { settings } = useEditorSettingsContext();
   const [isSnippetManagerOpen, setIsSnippetManagerOpen] = useState(false);
   const [isEditorSettingsOpen, setIsEditorSettingsOpen] = useState(false);
+  const [isPackageManagerOpen, setIsPackageManagerOpen] = useState(false);
   
   // Filter languages to only show JS/TS related ones
   const jsTsLanguages = useMemo(() => {
@@ -183,6 +185,13 @@ const JavaScriptEditor = ({
           Snippets
         </button>
         <button
+          onClick={() => setIsPackageManagerOpen(true)}
+          className={`px-2 py-1 text-xs rounded-md ${theme === Theme.Dark ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-green-500 hover:bg-green-600 text-white'} transition-colors`}
+          title="Manage NPM packages"
+        >
+          Packages
+        </button>
+        <button
           onClick={() => setIsEditorSettingsOpen(true)}
           className={`px-2 py-1 text-xs rounded-md ${theme === Theme.Dark ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'bg-gray-500 hover:bg-gray-600 text-white'} transition-colors`}
           title="Editor settings"
@@ -255,6 +264,12 @@ const JavaScriptEditor = ({
         isOpen={isSnippetManagerOpen}
         onClose={() => setIsSnippetManagerOpen(false)}
         currentLanguage={language}
+      />
+      
+      {/* Package Manager Modal */}
+      <PackageManager
+        isOpen={isPackageManagerOpen}
+        onClose={() => setIsPackageManagerOpen(false)}
       />
       
       {/* Editor Settings Modal */}
