@@ -1,4 +1,4 @@
-import {            
+import {
   initializeApp,
   getApps,
 } from 'firebase/app';
@@ -39,49 +39,5 @@ export const DEMO_USER = {
   avatar: '👤',
 } as const;
 
-// Interfaces
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar: string;
-}
-
-import { CellType } from '../types/enums';
-
-export interface Cell {
-  id: string;
-  type: CellType;
-  content: string;
-  language?: string;
-  output?: string;
-  error?: string;
-}
-
-export interface Notebook {
-  id: string;
-  title: string;
-  description?: string;
-  cells: Cell[];
-  userId: string;
-  createdAt: number;
-  updatedAt: number;
-  isPublic: boolean;
-  tags: string[];
-}
-
-export interface CreateNotebookData {
-  title: string;
-  description?: string;
-  cells: Cell[];
-  isPublic?: boolean;
-  tags?: string[];
-}
-
-export interface UpdateNotebookData {
-  title?: string;
-  description?: string;
-  cells?: Cell[];
-  isPublic?: boolean;
-  tags?: string[];
-}
+// Export types from centralized location
+export type { User, Cell, Notebook, CreateNotebookData, UpdateNotebookData } from '../types';

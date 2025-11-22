@@ -1,4 +1,4 @@
-import { 
+import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
@@ -7,19 +7,13 @@ import {
 } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth } from './firebase';
-
-export interface AuthUser {
-  uid: string;
-  email: string | null;
-  displayName: string | null;
-  photoURL: string | null;
-}
+import type { AuthUser } from '../types/services/auth';
 
 class AuthService {
   // Convert Firebase User to our AuthUser interface
   private mapFirebaseUser(user: User | null): AuthUser | null {
     if (!user) return null;
-    
+
     return {
       uid: user.uid,
       email: user.email,
@@ -46,11 +40,11 @@ class AuthService {
     } catch (error) {
       console.error('🔥 Firebase login error:', error);
       let errorMessage = 'Login failed';
-      
+
       if (error instanceof Error) {
         console.error('🔥 Error message:', error.message);
         console.error('🔥 Error code:', (error as any).code);
-        
+
         // Handle Firebase error codes
         const errorCode = (error as any).code;
         switch (errorCode) {
@@ -93,7 +87,7 @@ class AuthService {
             }
         }
       }
-      
+
       throw new Error(errorMessage);
     }
   }
@@ -114,17 +108,17 @@ class AuthService {
     try {
       console.log('📝 Attempting registration with email:', email);
       const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
-      
+
       // Update the user profile with display name
       await updateProfile(userCredential.user, {
         displayName: displayName,
       });
-      
+
       console.log('✅ User registered successfully');
       return this.mapFirebaseUser(userCredential.user)!;
     } catch (error) {
       let errorMessage = 'Registration failed';
-      
+
       if (error instanceof Error) {
         switch (error.message) {
           case 'Firebase: Error (auth/email-already-in-use).':
@@ -138,7 +132,7 @@ class AuthService {
             break;
         }
       }
-      
+
       throw new Error(errorMessage);
     }
   }
@@ -172,3 +166,6 @@ class AuthService {
 }
 
 export const authService = new AuthService();
+
+// Re-export types for convenience
+export type { AuthUser } from '../types/services/auth';

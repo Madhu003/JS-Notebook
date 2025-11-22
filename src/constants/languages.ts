@@ -1,10 +1,4 @@
-export interface LanguageConfig {
-  id: string;
-  name: string;
-  extension: string;
-  monacoLanguage: string;
-  boilerplate: string;
-}
+import type { LanguageConfig } from '../types/services/language';
 
 export const LANGUAGES: LanguageConfig[] = [
   {

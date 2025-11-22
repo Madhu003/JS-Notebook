@@ -1,23 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as monaco from 'monaco-editor';
-
-// Editor settings interface
-export interface EditorSettings {
-  fontSize: number;
-  tabSize: number;
-  minimap: boolean;
-  lineNumbers: boolean;
-  wordWrap: boolean;
-  folding: boolean;
-  showFoldingControls: 'always' | 'mouseover';
-  foldingStrategy: 'auto' | 'indentation';
-  foldingHighlight: boolean;
-  multiCursorModifier: 'alt' | 'ctrlCmd';
-  multiCursorPaste: 'spread' | 'full';
-  findAddExtraSpaceOnTop: boolean;
-  findAutoFindInSelection: 'never' | 'always' | 'multiline';
-  findSeedSearchStringFromSelection: 'never' | 'always';
-}
+import type { EditorSettings } from '../types/services/editor';
 
 // Default settings
 const defaultSettings: EditorSettings = {
@@ -74,7 +57,7 @@ export const useEditorSettings = () => {
 
 export const useUpdateEditorSetting = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ key, value }: { key: keyof EditorSettings; value: any }) => {
       const currentSettings = queryClient.getQueryData<EditorSettings>(editorSettingsKeys.settings()) || defaultSettings;
@@ -90,7 +73,7 @@ export const useUpdateEditorSetting = () => {
 
 export const useResetEditorSettings = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: () => {
       saveEditorSettings(defaultSettings);
