@@ -1,3 +1,2 @@
-export * from './auth';
-export * from './editor';
-export * from './language';
+export * from './interface';
+

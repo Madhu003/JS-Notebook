@@ -1,12 +1,7 @@
 import React from 'react';
-import { cn } from '../../../../lib/utils';
-import { buttonStyles } from './styles';
-
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: keyof typeof buttonStyles.variants;
-  size?: keyof typeof buttonStyles.sizes;
-  isLoading?: boolean;
-}
+import { cn } from '../../../lib/utils';
+import { buttonStyles } from './constants';
+import type { ButtonProps } from './interface';
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', isLoading, children, ...props }, ref) => {

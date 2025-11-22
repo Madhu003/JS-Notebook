@@ -4,3 +4,5 @@ export * from './Modal';
 export * from './InlineEdit';
 export * from './NotebookCard';
 export * from './SnippetCard';
+export * from './interface';
+

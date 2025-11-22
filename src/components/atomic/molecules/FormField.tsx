@@ -1,12 +1,8 @@
 import React from 'react';
-import { Input, InputProps } from '../atoms/Input';
+import { Input} from '../atoms/Input';
 import { Typography } from '../atoms/Typography';
-import { cn } from '../../../../lib/utils';
-
-export interface FormFieldProps extends Omit<InputProps, 'label'> {
-  label?: string;
-  containerClassName?: string;
-}
+import { cn } from '../../../lib/utils';
+import type { FormFieldProps, InputProps } from './interface';
 
 export const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
   ({ className, containerClassName, label, error, helperText, id, ...props }, ref) => {

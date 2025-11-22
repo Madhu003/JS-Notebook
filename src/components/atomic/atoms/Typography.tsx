@@ -1,13 +1,8 @@
 import React from 'react';
-import { cn } from '../../../../lib/utils';
-import { typographyStyles } from './styles';
+import { cn } from '../../../lib/utils';
+import { typographyStyles } from './constants';
+import type { TypographyProps } from './interface';
 
-type TypographyVariant = keyof typeof typographyStyles;
-
-export interface TypographyProps extends React.HTMLAttributes<HTMLElement> {
-  variant?: TypographyVariant;
-  component?: React.ElementType;
-}
 
 export const Typography = React.forwardRef<HTMLElement, TypographyProps>(
   ({ className, variant = 'p', component, children, ...props }, ref) => {

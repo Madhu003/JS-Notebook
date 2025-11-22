@@ -1,3 +1,18 @@
+// ===========================
+// Auth Interfaces
+// ===========================
+
+export interface AuthUser {
+    uid: string;
+    email: string | null;
+    displayName: string | null;
+    photoURL: string | null;
+}
+
+// ===========================
+// Editor Interfaces
+// ===========================
+
 export interface EditorSettings {
     fontSize: number;
     tabSize: number;
@@ -27,3 +42,15 @@ export interface CodeEditorProps extends BaseEditorProps {
 }
 
 export interface MarkdownEditorProps extends BaseEditorProps { }
+
+// ===========================
+// Language Interfaces
+// ===========================
+
+export interface LanguageConfig {
+    id: string;
+    name: string;
+    extension: string;
+    monacoLanguage: string;
+    boilerplate: string;
+}

@@ -1,10 +1,7 @@
 import React from 'react';
-import { cn } from '../../../../lib/utils';
-import { badgeStyles } from './styles';
-
-export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: keyof typeof badgeStyles.variants;
-}
+import { cn } from '../../../lib/utils';
+import { badgeStyles } from './constants';
+import type { BadgeProps } from './interface';
 
 export const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
   ({ className, variant = 'default', ...props }, ref) => {

@@ -1,0 +1,1 @@
+export { ButtonProps, InputProps, TypographyProps, BadgeProps, CardProps, CardHeaderProps, CardTitleProps, CardDescriptionProps, CardContentProps, CardFooterProps } from '../../../types/components/interface';
