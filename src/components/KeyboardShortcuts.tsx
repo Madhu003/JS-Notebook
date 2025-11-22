@@ -114,12 +114,12 @@ const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({ isOpen, onClose }
   ];
 
   const categories = [
-    { id: 'general', name: 'General', icon: '⌨️' },
-    { id: 'editor', name: 'Editor', icon: '✏️' },
-    { id: 'navigation', name: 'Navigation', icon: '🧭' },
-    { id: 'multi-cursor', name: 'Multi-cursor', icon: '👆' },
-    { id: 'folding', name: 'Code Folding', icon: '📁' },
-    { id: 'snippets', name: 'Snippets', icon: '📝' },
+    { id: 'general', name: 'General', icon: '' },
+    { id: 'editor', name: 'Editor', icon: '' },
+    { id: 'navigation', name: 'Navigation', icon: '' },
+    { id: 'multi-cursor', name: 'Multi-cursor', icon: '' },
+    { id: 'folding', name: 'Code Folding', icon: '' },
+    { id: 'snippets', name: 'Snippets', icon: '' },
   ];
 
   const currentShortcuts = shortcuts.find(s => s.category === activeCategory)?.shortcuts || [];
@@ -132,7 +132,7 @@ const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({ isOpen, onClose }
         {/* Header */}
         <div className={`${theme === Theme.Dark ? 'bg-gray-700' : 'bg-gray-100'} px-6 py-4 border-b flex items-center justify-between`}>
           <h2 className={`text-xl font-semibold ${theme === Theme.Dark ? 'text-white' : 'text-gray-800'}`}>
-            ⌨️ Keyboard Shortcuts
+            Keyboard Shortcuts
           </h2>
           <button
             onClick={onClose}
@@ -172,7 +172,7 @@ const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({ isOpen, onClose }
           <div className="flex-1 p-6 overflow-y-auto">
             <div className="mb-4">
               <h3 className={`text-lg font-medium ${theme === Theme.Dark ? 'text-white' : 'text-gray-800'}`}>
-                {categories.find(c => c.id === activeCategory)?.icon} {categories.find(c => c.id === activeCategory)?.name}
+                {categories.find(c => c.id === activeCategory)?.name}
               </h3>
               <p className={`text-sm ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
                 Keyboard shortcuts for {categories.find(c => c.id === activeCategory)?.name.toLowerCase()}
@@ -207,7 +207,7 @@ const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({ isOpen, onClose }
             {/* Tips */}
             <div className={`mt-8 p-4 rounded-lg ${theme === Theme.Dark ? 'bg-blue-900/20 border border-blue-700' : 'bg-blue-50 border border-blue-200'}`}>
               <h4 className={`text-sm font-medium mb-2 ${theme === Theme.Dark ? 'text-blue-200' : 'text-blue-800'}`}>
-                💡 Tips
+                Tips
               </h4>
               <ul className={`text-sm space-y-1 ${theme === Theme.Dark ? 'text-blue-300' : 'text-blue-700'}`}>
                 <li>• Most shortcuts work in both JavaScript and React editors</li>

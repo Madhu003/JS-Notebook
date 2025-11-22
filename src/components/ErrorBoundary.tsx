@@ -39,7 +39,6 @@ const DefaultErrorFallback: React.FC<{ error?: Error }> = ({ error }) => {
   return (
     <div className={`p-4 rounded-lg border ${theme === Theme.Dark ? 'bg-red-900/20 border-red-700 text-red-200' : 'bg-red-50 border-red-200 text-red-700'}`}>
       <div className="flex items-center gap-2 mb-2">
-        <span className="text-lg">⚠️</span>
         <h3 className="font-semibold">React Component Error</h3>
       </div>
       <p className="text-sm mb-2">

@@ -36,7 +36,7 @@ export const DEMO_USER = {
   id: 'demo-user-1',
   name: 'Demo User',
   email: 'demo@example.com',
-  avatar: '👤',
+  avatar: '',
 } as const;
 
 // Export types from centralized location

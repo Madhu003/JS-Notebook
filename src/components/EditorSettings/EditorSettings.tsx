@@ -20,7 +20,7 @@ const EditorSettings: React.FC<EditorSettingsProps> = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className={`${theme === Theme.Dark ? 'bg-gray-700' : 'bg-gray-100'} px-6 py-4 border-b flex items-center justify-between`}>
           <h2 className={`text-xl font-semibold ${theme === Theme.Dark ? 'text-white' : 'text-gray-800'}`}>
-            ⚙️ Editor Settings
+            Editor Settings
           </h2>
           <button
             onClick={onClose}
@@ -41,7 +41,7 @@ const EditorSettings: React.FC<EditorSettingsProps> = ({ isOpen, onClose }) => {
                   : theme === Theme.Dark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              🎨 Appearance
+                            Appearance
             </button>
             <button
               onClick={() => setActiveTab('behavior')}
@@ -51,7 +51,7 @@ const EditorSettings: React.FC<EditorSettingsProps> = ({ isOpen, onClose }) => {
                   : theme === Theme.Dark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              🎯 Behavior
+              Behavior
             </button>
             <button
               onClick={() => setActiveTab('advanced')}
@@ -61,7 +61,7 @@ const EditorSettings: React.FC<EditorSettingsProps> = ({ isOpen, onClose }) => {
                   : theme === Theme.Dark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              ⚡ Advanced
+              Advanced
             </button>
             <button
               onClick={() => setActiveTab('themes')}
@@ -71,7 +71,7 @@ const EditorSettings: React.FC<EditorSettingsProps> = ({ isOpen, onClose }) => {
                   : theme === Theme.Dark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              🎨 Themes
+              Themes
             </button>
           </div>
         </div>

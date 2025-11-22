@@ -806,11 +806,11 @@ const Notebook = (): JSX.Element => {
                 defaultValue=""
               >
                 <option value="" disabled>+ Add Cell</option>
-                <option value="code-javascript">📝 JavaScript</option>
-                <option value="code-typescript">📘 TypeScript</option>
-                <option value="code-react">⚛️ React</option>
-                <option value="code-react-ts">⚛️ React TypeScript</option>
-                <option value="markdown-">📄 Markdown</option>
+                <option value="code-javascript">JavaScript</option>
+                <option value="code-typescript">TypeScript</option>
+                <option value="code-react">React</option>
+                <option value="code-react-ts">React TypeScript</option>
+                <option value="markdown-">Markdown</option>
               </select>
               <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                 <ExpandMoreIcon className="text-white" />

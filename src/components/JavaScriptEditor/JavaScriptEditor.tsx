@@ -169,10 +169,10 @@ const JavaScriptEditor = ({
       <div className={`flex items-center justify-between p-2 ${theme === Theme.Dark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50'} border-b transition-colors`}>
         <div className="flex items-center gap-2">
           <span className={`text-sm font-medium ${theme === Theme.Dark ? 'text-gray-300' : 'text-gray-700'}`}>
-            {language === 'javascript' ? '📝 JavaScript' : '📘 TypeScript'}
+            {language === 'javascript' ? 'JavaScript' : 'TypeScript'}
           </span>
           <span className={`text-xs ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'}`}>
-            💡 Cmd+Enter to run • Cmd+Shift+F to format
+            Cmd+Enter to run • Cmd+Shift+F to format
           </span>
         </div>
         <button
@@ -180,14 +180,14 @@ const JavaScriptEditor = ({
           className={`px-2 py-1 text-xs rounded-md ${theme === Theme.Dark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'} transition-colors`}
           title="Manage code snippets"
         >
-          📝 Snippets
+          Snippets
         </button>
         <button
           onClick={() => setIsEditorSettingsOpen(true)}
           className={`px-2 py-1 text-xs rounded-md ${theme === Theme.Dark ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'bg-gray-500 hover:bg-gray-600 text-white'} transition-colors`}
           title="Editor settings"
         >
-          ⚙️ Settings
+          Settings
         </button>
       </div>
       <div className="flex flex-1 flex-col min-h-[200px]">

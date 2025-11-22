@@ -166,10 +166,10 @@ const ReactEditor = ({
       <div className={`flex items-center justify-between p-2 ${theme === Theme.Dark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50'} border-b transition-colors`}>
         <div className="flex items-center gap-2">
           <span className={`text-sm font-medium ${theme === Theme.Dark ? 'text-gray-300' : 'text-gray-700'}`}>
-            {language === 'react' ? '⚛️ React' : '⚛️ React TypeScript'}
+            {language === 'react' ? 'React' : 'React TypeScript'}
           </span>
           <span className={`text-xs ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'}`}>
-            ⚛️ React Component • Cmd+Enter to run • Cmd+Shift+F to format
+            React Component • Cmd+Enter to run • Cmd+Shift+F to format
           </span>
         </div>
         <button
@@ -177,14 +177,14 @@ const ReactEditor = ({
           className={`px-2 py-1 text-xs rounded-md ${theme === Theme.Dark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'} transition-colors`}
           title="Manage code snippets"
         >
-          📝 Snippets
+          Snippets
         </button>
         <button
           onClick={() => setIsEditorSettingsOpen(true)}
           className={`px-2 py-1 text-xs rounded-md ${theme === Theme.Dark ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'bg-gray-500 hover:bg-gray-600 text-white'} transition-colors`}
           title="Editor settings"
         >
-          ⚙️ Settings
+          Settings
         </button>
       </div>
       <div className="flex flex-1 flex-col min-h-[200px]">
@@ -241,7 +241,7 @@ const ReactEditor = ({
         <div className={`border ${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-300'} rounded-lg overflow-hidden`}>
           <div className={`${theme === Theme.Dark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'} px-3 py-2 text-sm font-medium border-b flex items-center justify-between`}>
             <div className="flex items-center gap-2">
-              <span>🎯 Live React Preview</span>
+              <span>Live React Preview</span>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -249,7 +249,7 @@ const ReactEditor = ({
                 className={`px-2 py-1 text-xs rounded ${theme === Theme.Dark ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'} transition-colors`}
                 title={`Switch to ${previewSize === 'compact' ? 'expanded' : 'compact'} view`}
               >
-                {previewSize === 'compact' ? '📈' : '📉'}
+                {previewSize === 'compact' ? 'Expand' : 'Compact'}
               </button>
               <button
                 onClick={() => {
@@ -261,7 +261,7 @@ const ReactEditor = ({
                 className={`px-2 py-1 text-xs rounded ${theme === Theme.Dark ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'} transition-colors`}
                 title="Clear preview"
               >
-                🗑️
+                Clear
               </button>
             </div>
           </div>
@@ -274,12 +274,11 @@ const ReactEditor = ({
                 {/* React component will be rendered here */}
                 <div className={`flex items-center justify-center h-full ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'}`}>
                   <div className="text-center">
-                    <div className="text-4xl mb-2">⚛️</div>
                     <p>React Preview will appear here after running the code</p>
                     <p className="text-sm mt-1">Press Cmd+Enter or click Run to execute</p>
                     <div className="mt-3 text-xs opacity-75">
-                      <p>💡 Tip: Use console.log() to debug your component</p>
-                      <p>💡 Tip: Return JSX from your component function</p>
+                      <p>Tip: Use console.log() to debug your component</p>
+                      <p>Tip: Return JSX from your component function</p>
                     </div>
                   </div>
                 </div>
@@ -294,7 +293,7 @@ const ReactEditor = ({
         <div className="mt-4">
           <div className={`border ${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-300'} rounded-lg overflow-hidden`}>
             <div className={`${theme === Theme.Dark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'} px-3 py-2 text-sm font-medium border-b flex items-center justify-between`}>
-              <span>⚛️ React Console Output</span>
+              <span>React Console Output</span>
               {executionTime && (
                 <span className={`text-xs px-2 py-1 rounded-full font-mono ${theme === Theme.Dark ? 'bg-green-900/80 text-green-200 border border-green-700' : 'bg-green-100 text-green-800 border border-green-200'}`}>
                   {executionTime}ms

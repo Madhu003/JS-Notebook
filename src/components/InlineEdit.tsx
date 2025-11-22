@@ -135,7 +135,6 @@ const InlineEdit = ({ value, onSave, onChange, className = '', placeholder = 'En
       <span className="relative">
         {value}
         <span className="absolute -right-5 top-0 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
-          ✏️
         </span>
       </span>
     </button>
