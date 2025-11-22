@@ -1,192 +1,359 @@
-# JS Notebook
+# 📓 JS-Notebook
 
-A modern, interactive JavaScript notebook environment built with React and TypeScript - think Jupyter Notebook but for JavaScript!
+> A powerful, browser-based interactive coding environment for JavaScript, TypeScript, and React with real-time execution, NPM package integration, and cloud synchronization.
 
-## 🚀 Features
+[![React](https://img.shields.io/badge/React-18.2.0-blue.svg)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0.2-blue.svg)](https://www.typescriptlang.org/)
+[![Firebase](https://img.shields.io/badge/Firebase-10.7.1-orange.svg)](https://firebase.google.com/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-- **Interactive Code Execution**: Write and execute JavaScript/TypeScript code in isolated cells
-- **Rich Markdown Support**: Create beautiful documentation with Markdown cells
-- **Live Preview**: See your results instantly as you type
-- **Code Editor Features**:
-  - Syntax highlighting
-  - Auto-completion
-  - Error highlighting
-  - Code formatting
+## ✨ Features
 
-## 🎯 Showcase
+### 🎯 Core Capabilities
+- **Multiple Language Support**: JavaScript, TypeScript, React (JSX/TSX), and Markdown
+- **Real-time Execution**: Run code instantly with live output visualization
+- **NPM Package Integration**: Install and use any NPM package from unpkg.com CDN
+- **Monaco Editor**: Professional code editing with IntelliSense, syntax highlighting, and auto-completion
+- **Code Snippets**: Save and reuse code snippets across notebooks
+- **Cloud Sync**: Save notebooks to Firebase with real-time synchronization
 
-### Code Cell Example
+### 🚀 Advanced Features
+- **React Preview**: Live React component rendering with error boundaries
+- **Babel Transpilation**: Automatic JSX/TSX to JavaScript transpilation
+- **DnD Reordering**: Drag-and-drop cells to reorganize your notebook
+- **Dark/Light Theme**: Eye-friendly themes with Monaco editor integration
+- **Keyboard Shortcuts**: Boost productivity with extensive shortcuts
+- **Editor Settings**: Customizable font size, minimap, line numbers, and more
+- **Output Visualization**: Formatted console output with syntax highlighting
 
-Here's an example of a JavaScript code cell that creates a star pyramid:
+### 📦 Package Manager
+- **Dynamic NPM Installation**: Install packages on-the-fly without npm install
+- **Popular Packages Tab**: Quick access to lodash, axios, date-fns, uuid, and more
+- **Version Support**: Install specific package versions
+- **Persistent Storage**: Installed packages saved in localStorage
+- **Global Access**: Packages available via window object
+- **Firebase Integration**: Centralized popular packages list
+
+### 🎨 User Experience
+- **Responsive Design**: Works seamlessly on desktop and tablet
+- **Inline Editing**: Edit notebook titles directly
+- **Auto-save**: Changes automatically synced to cloud
+- **Error Handling**: Graceful error messages and recovery
+- **Authentication**: Secure Google Sign-In with Firebase Auth
+
+## 🛠️ Tech Stack
+
+- **Frontend**: React 18.2 with TypeScript
+- **Styling**: Tailwind CSS with custom utilities
+- **Code Editor**: Monaco Editor (VS Code engine)
+- **Backend**: Firebase (Firestore, Authentication, Storage)
+- **Build Tool**: Vite
+- **Code Execution**: Babel Standalone
+- **UI Components**: Material-UI Icons
+- **State Management**: React Context API + React Query
+- **Drag & Drop**: react-beautiful-dnd
+
+## 📋 Prerequisites
+
+- Node.js 18+ and npm 9+
+- Firebase account and project
+- Modern web browser (Chrome, Firefox, Safari, Edge)
+
+## 🚀 Getting Started
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/Madhu003/JS-Notebook.git
+cd JS-Notebook
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Firebase Setup
+
+1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
+2. Enable Authentication (Google Sign-In)
+3. Create a Firestore database
+4. Get your Firebase configuration
+5. Create `.env` file in the root directory:
+
+```env
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
+
+### 4. Firestore Security Rules
+
+Update your Firestore rules:
 
 ```javascript
-function printStarPyramid(height) {
-    for (let i = 1; i <= height; i++) {
-        // Add leading spaces
-        let spaces = ' '.repeat(height - i);
-        
-        // Add stars
-        let stars = '*'.repeat(i * 2 - 1);
-        
-        // Print the row
-        console.log(spaces + stars);
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Notebooks - user can only access their own
+    match /notebooks/{notebookId} {
+      allow read, write: if request.auth != null && 
+                         request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+                    request.auth.uid == request.resource.data.userId;
     }
+    
+    // Snippets - user can only access their own
+    match /snippets/{snippetId} {
+      allow read, write: if request.auth != null && 
+                         request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+                    request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Popular packages - public read
+    match /popularPackages/{packageId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
 }
 ```
 
-Output:
+### 5. Seed Popular Packages (One-time)
 
-```text
-    *
-   ***
-  *****
- *******
-*********
+After first run, seed the popular packages collection:
+
+```javascript
+// In browser console
+import { popularPackagesService } from './services/popularPackagesService';
+await popularPackagesService.seedDefaultPackages();
 ```
 
-### Markdown Support
-
-The notebook supports rich Markdown formatting:
-
-- **Bold text** for emphasis
-- _Italicized text_ for subtle emphasis
-- Headers of different levels
-- Code blocks with syntax highlighting
-- Lists and tables
-- And much more!
-
-### Use Cases
-
-1. **Interactive Learning**
-   - Create interactive JavaScript tutorials
-   - Practice coding exercises
-   - Experiment with code snippets
-
-2. **Documentation**
-   - Write technical documentation with live code examples
-   - Create API usage guides
-   - Document code behavior with real outputs
-
-3. **Prototyping**
-   - Quick experimentation with new ideas
-   - Test JavaScript/TypeScript code snippets
-   - Debug complex functions with immediate feedback
-
-4. **Data Visualization**
-   - Create and test data visualization code
-   - Interactive data analysis
-   - Real-time chart and graph generation
-
-## Why JS Notebook?
-
-Just as Python has Jupyter Notebook and Google Colab for interactive computing, JS Notebook brings the same powerful concept to JavaScript development. Whether you're:
-
-- Learning JavaScript/TypeScript
-- Prototyping code
-- Creating interactive documentation
-- Teaching programming concepts
-- Experimenting with data visualization
-
-JS Notebook provides an ideal environment for interactive JavaScript development.
-
-## Getting Started
+### 6. Start Development Server
 
 ```bash
-# Clone the repository
-git clone https://github.com/Madhu003/JS-Notebook.git
-
-# Install dependencies
-npm install
-
-# Start the development server
 npm run dev
 ```
 
-## 💡 Usage
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-1. Create new cells by clicking the '+' button
-2. Choose between code and markdown cells
-3. Write JavaScript/TypeScript code or Markdown content
-4. Execute code cells to see results immediately
-5. Save your notebook for later use
+### 7. Build for Production
 
-## 🛠️ Built With
+```bash
+npm run build
+npm run preview
+```
 
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- Monaco Editor (Same editor as VS Code)
+## 📚 Usage Guide
 
-## Contributing
+### Creating a Notebook
 
-Contributions are welcome! Feel free to:
+1. Sign in with Google
+2. Click "New Notebook" button
+3. Add cells using the "+" dropdown
+4. Choose cell type: JavaScript, TypeScript, React, or Markdown
+5. Write code and press `Cmd/Ctrl + Enter` to execute
+
+### Installing NPM Packages
+
+1. Click the green **"Packages"** button in any editor
+2. Choose from Popular packages or search for any NPM package
+3. Click "Install"
+4. Use the package in your code:
+
+```javascript
+const _ = window.lodash;
+const chunked = _.chunk([1, 2, 3, 4], 2);
+console.log(chunked); // [[1, 2], [3, 4]]
+```
+
+### Using Code Snippets
+
+1. Click "Snippets" button
+2. Create a new snippet with name, description, and code
+3. Insert snippets into any cell with autocomplete
+
+### Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Cmd/Ctrl + Enter` | Run current cell |
+| `Cmd/Ctrl + S` | Save notebook |
+| `Cmd/Ctrl + Shift + F` | Format code |
+| `Cmd/Ctrl + /` | Toggle comment |
+| `Cmd/Ctrl + D` | Duplicate selection |
+
+## 🏗️ Project Structure
+
+```
+JS-Notebook/
+├── src/
+│   ├── components/          # React components
+│   │   ├── atomic/         # Atomic design components
+│   │   │   ├── atoms/      # Basic UI elements
+│   │   │   └── molecules/  # Composite components
+│   │   ├── ReactEditor/    # React code editor
+│   │   ├── JavaScriptEditor/ # JS/TS code editor
+│   │   ├── PackageManager/ # NPM package manager UI
+│   │   └── SnippetManager/ # Code snippets management
+│   ├── hooks/              # Custom React hooks
+│   │   ├── useAuth.ts      # Authentication hook
+│   │   ├── useTheme.ts     # Theme management
+│   │   ├── useSnippets.ts  # Snippets hook
+│   │   └── usePackageManager.ts # Package management
+│   ├── services/           # Business logic & API
+│   │   ├── firebase.ts     # Firebase configuration
+│   │   ├── authService.ts  # Authentication service
+│   │   ├── notebookService.ts # Notebook CRUD
+│   │   ├── snippetService.ts  # Snippets CRUD
+│   │   ├── packageManager.ts  # NPM package loading
+│   │   └── popularPackagesService.ts # Popular packages
+│   ├── types/              # TypeScript definitions
+│   │   ├── models/         # Data models
+│   │   ├── services/       # Service interfaces
+│   │   └── components/     # Component props
+│   ├── constants/          # Constants and configs
+│   ├── utils/              # Utility functions
+│   └── App.tsx             # Root component
+├── public/                 # Static assets
+├── firestore.rules         # Firestore security rules
+└── package.json            # Dependencies
+```
+
+## 🎨 Theming
+
+The app supports dark and light themes with Monaco editor integration:
+
+```typescript
+import { useTheme, Theme } from './hooks/useTheme';
+
+function MyComponent() {
+  const { theme, toggleTheme } = useTheme();
+  
+  return (
+    <div className={theme === Theme.Dark ? 'dark' : 'light'}>
+      <button onClick={toggleTheme}>Toggle Theme</button>
+    </div>
+  );
+}
+```
+
+## 🔧 Configuration
+
+### Editor Settings
+
+Customize Monaco editor via UI or programmatically:
+
+```typescript
+const { settings, updateSetting } = useEditorSettingsContext();
+
+updateSetting('fontSize', 16);
+updateSetting('minimap', false);
+updateSetting('lineNumbers', true);
+```
+
+### Available Settings
+- Font size (10-24px)
+- Line numbers (on/off)
+- Minimap (on/off)
+- Word wrap (on/off)
+- Tab size (2-8 spaces)
+- Theme (VS Light, VS Dark, Monokai, Dracula, etc.)
+
+## 🧪 Testing
+
+```bash
+# Run tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run linter
+npm run lint
+```
+
+## 📦 Available NPM Packages
+
+Popular packages ready to install:
+- **lodash** - Utility functions (`window._`)
+- **axios** - HTTP client (`window.axios`)
+- **date-fns** - Date utilities (`window.dateFns`)
+- **uuid** - UUID generator (`window.uuid`)
+- **dayjs** - Date library (`window.dayjs`)
+- **ramda** - Functional programming (`window.R`)
+
+Plus any package from NPM via unpkg.com!
+
+## 🎯 Use Cases
+
+### 1. Interactive Learning
+- Create interactive JavaScript tutorials
+- Practice coding exercises
+- Experiment with code snippets
+
+### 2. Documentation
+- Write technical documentation with live code examples
+- Create API usage guides
+- Document code behavior with real outputs
+
+### 3. Prototyping
+- Quick experimentation with new ideas
+- Test JavaScript/TypeScript code snippets
+- Debug complex functions with immediate feedback
+
+### 4. Data Visualization
+- Create and test data visualization code
+- Interactive data analysis
+- Real-time chart and graph generation
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
 
 1. Fork the repository
-2. Create your feature branch
-3. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## License
+## 📝 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [Monaco Editor](https://microsoft.github.io/monaco-editor/) - Powerful code editor
+- [Babel](https://babeljs.io/) - JavaScript compiler
+- [Firebase](https://firebase.google.com/) - Backend infrastructure
+- [React](https://reactjs.org/) - UI framework
+- [Vite](https://vitejs.dev/) - Build tool
+- [unpkg](https://unpkg.com/) - CDN for NPM packages
+
+## 📞 Support
+
+For issues and questions:
+- Open an [issue](https://github.com/Madhu003/JS-Notebook/issues)
+- Star the repo if you find it useful!
+
+## 🗺️ Roadmap
+
+- [ ] Collaborative editing
+- [ ] Export notebooks (PDF, HTML, JSON)
+- [ ] Import/Export code cells
+- [ ] Version history
+- [ ] Custom themes
+- [ ] Plugin system
+- [ ] Terminal integration
+- [ ] Python/Node.js support
 
 ---
 
-Made with ❤️ by [Madhu003](https://github.com/Madhu003)
+**Made with ❤️ by [Madhu003](https://github.com/Madhu003)**
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Just as Python has Jupyter Notebook for interactive computing, JS-Notebook brings the same powerful concept to JavaScript development!
