@@ -7,10 +7,10 @@ import { useTheme, Theme } from '../../hooks/useTheme';
 import { useSnippetsContext } from '../../hooks/useSnippets';
 import { useAuth } from '../../hooks/useAuth';
 import { useEditorSettingsContext } from '../../hooks/useEditorSettings';
-import SnippetManager from '../SnippetManager/SnippetManager';
+import SnippetManager from '../SnippetManager';
 import ErrorBoundary from '../ErrorBoundary';
-import EditorSettings from '../EditorSettings/EditorSettings';
-import PackageManager from '../PackageManager/PackageManager';
+import EditorSettings from '../EditorSettings';
+import PackageManager from '../PackageManager';
 import './ReactEditor.css';
 
 interface ReactEditorProps extends CodeEditorProps {

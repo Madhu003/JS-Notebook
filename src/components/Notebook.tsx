@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import React from 'react';
 import JavaScriptEditor from './JavaScriptEditor';
 import ReactEditor from './ReactEditor';
-import MarkdownEditor from './MarkdownEditor/MarkdownEditor';
+import MarkdownEditor from './MarkdownEditor';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { Cell } from '../types';
 import { CellType, isCodeCell } from '../types';
