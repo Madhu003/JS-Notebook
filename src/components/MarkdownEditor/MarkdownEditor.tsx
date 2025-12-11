@@ -115,14 +115,20 @@ const MarkdownEditor = ({
     }
   }, [value]);
 
-  // Update readOnly state
+  // Update readOnly state and force layout
   useEffect(() => {
     if (monacoEditorRef.current) {
+      // Always allow editing
       monacoEditorRef.current.updateOptions({
-        readOnly: !isFocused
+        readOnly: false
       });
+      
+      // Force layout update when becoming visible
+      setTimeout(() => {
+        monacoEditorRef.current?.layout();
+      }, 50);
     }
-  }, [isFocused]);
+  }, [isFocused, preview.visible]);
 
   const insertMarkdownSyntax = (syntax: MarkdownSyntaxType, wrap: boolean = false) => {
     if (!monacoEditorRef.current || !isFocused) return;
@@ -234,15 +240,7 @@ const MarkdownEditor = ({
           </button>
           <div className="flex-1"></div>
           
-          {onRun && cellId && (
-            <button
-              onClick={() => onRun(cellId)}
-              className={`px-3 py-1.5 text-sm ${theme === Theme.Dark ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-green-500 hover:bg-green-600 text-white'} rounded-md transition-colors mr-2`}
-              title="Run Markdown (Cmd+Enter)"
-            >
-              ▶️ Run
-            </button>
-          )}
+
           
           <button
             onClick={() => setPreview(prev => ({ ...prev, visible: !prev.visible }))}
@@ -255,17 +253,19 @@ const MarkdownEditor = ({
 
       {/* Editor and Preview Container */}
       <div className={`flex flex-1 ${isFocused ? 'h-[calc(100%-48px)]' : 'h-full'}`}>
-        {/* Editor - always present, width changes based on focus */}
+        {/* Editor - always present */}
         <div
           ref={editorRef}
-          className={`${isFocused ? (preview.visible ? "w-1/2" : "w-full") : "hidden"} h-full ${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-200'} ${preview.visible && isFocused ? 'border-r' : ''}`}
+          className={`${preview.visible ? "w-1/2" : "w-full"} h-full ${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-200'} ${preview.visible ? 'border-r' : ''}`}
         />
         
-        {/* Preview - always present, full width when not focused */}
-        <div
-          className={`${isFocused ? (preview.visible ? "w-1/2" : preview.visible ? "w-full" : "hidden") : "w-full"} h-full overflow-auto p-4 ${theme === Theme.Dark ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'} markdown-preview transition-colors`}
-          dangerouslySetInnerHTML={{ __html: preview.html }}
-        />
+        {/* Preview - present if visible */}
+        {preview.visible && (
+          <div
+            className={`w-1/2 h-full overflow-auto p-4 ${theme === Theme.Dark ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'} markdown-preview transition-colors`}
+            dangerouslySetInnerHTML={{ __html: preview.html }}
+          />
+        )}
       </div>
       
       {/* Console Output section */}

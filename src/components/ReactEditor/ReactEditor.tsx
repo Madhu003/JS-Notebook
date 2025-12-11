@@ -7,10 +7,7 @@ import { useTheme, Theme } from '../../hooks/useTheme';
 import { useSnippetsContext } from '../../hooks/useSnippets';
 import { useAuth } from '../../hooks/useAuth';
 import { useEditorSettingsContext } from '../../hooks/useEditorSettings';
-import SnippetManager from '../SnippetManager';
 import ErrorBoundary from '../ErrorBoundary';
-import EditorSettings from '../EditorSettings';
-import PackageManager from '../PackageManager';
 import './ReactEditor.css';
 
 interface ReactEditorProps extends CodeEditorProps {
@@ -35,9 +32,6 @@ const ReactEditor = ({
   const { user } = useAuth();
   const { getSnippetsByLanguage } = useSnippetsContext(user?.uid || '');
   const { settings } = useEditorSettingsContext();
-  const [isSnippetManagerOpen, setIsSnippetManagerOpen] = useState(false);
-  const [isEditorSettingsOpen, setIsEditorSettingsOpen] = useState(false);
-  const [isPackageManagerOpen, setIsPackageManagerOpen] = useState(false);
   const [previewSize, setPreviewSize] = useState<'compact' | 'expanded'>('compact');
   
   // Filter languages to only show React related ones
@@ -165,37 +159,6 @@ const ReactEditor = ({
 
   return (
     <div className={`flex flex-col min-h-[400px] rounded-lg overflow-hidden ${theme === Theme.Dark ? 'bg-gray-800' : 'bg-white'} shadow-sm transition-colors`}>
-      <div className={`flex items-center justify-between p-2 ${theme === Theme.Dark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50'} border-b transition-colors`}>
-        <div className="flex items-center gap-2">
-          <span className={`text-sm font-medium ${theme === Theme.Dark ? 'text-gray-300' : 'text-gray-700'}`}>
-            {language === 'react' ? 'React' : 'React TypeScript'}
-          </span>
-          <span className={`text-xs ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'}`}>
-            React Component • Cmd+Enter to run • Cmd+Shift+F to format
-          </span>
-        </div>
-        <button
-          onClick={() => setIsSnippetManagerOpen(true)}
-          className={`px-2 py-1 text-xs rounded-md ${theme === Theme.Dark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'} transition-colors`}
-          title="Manage code snippets"
-        >
-          Snippets
-        </button>
-        <button
-          onClick={() => setIsPackageManagerOpen(true)}
-          className={`px-2 py-1 text-xs rounded-md ${theme === Theme.Dark ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-green-500 hover:bg-green-600 text-white'} transition-colors`}
-          title="Manage NPM packages"
-        >
-          Packages
-        </button>
-        <button
-          onClick={() => setIsEditorSettingsOpen(true)}
-          className={`px-2 py-1 text-xs rounded-md ${theme === Theme.Dark ? 'bg-gray-600 hover:bg-gray-700 text-white' : 'bg-gray-500 hover:bg-gray-600 text-white'} transition-colors`}
-          title="Editor settings"
-        >
-          Settings
-        </button>
-      </div>
       <div className="flex flex-1 flex-col min-h-[200px]">
         <Editor
           height="200px"
@@ -321,25 +284,6 @@ const ReactEditor = ({
           </div>
         </div>
       )}
-      
-      {/* Snippet Manager Modal */}
-      <SnippetManager
-        isOpen={isSnippetManagerOpen}
-        onClose={() => setIsSnippetManagerOpen(false)}
-        currentLanguage={language}
-      />
-      
-      {/* Package Manager Modal */}
-      <PackageManager
-        isOpen={isPackageManagerOpen}
-        onClose={() => setIsPackageManagerOpen(false)}
-      />
-      
-      {/* Editor Settings Modal */}
-      <EditorSettings
-        isOpen={isEditorSettingsOpen}
-        onClose={() => setIsEditorSettingsOpen(false)}
-      />
     </div>
   );
 };

@@ -28,9 +28,13 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import UnfoldLessIcon from '@mui/icons-material/UnfoldLess';
 import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import DescriptionIcon from '@mui/icons-material/Description';
-import LightbulbIcon from '@mui/icons-material/Lightbulb';
-import TouchAppIcon from '@mui/icons-material/TouchApp';
 import CircularProgress from '@mui/material/CircularProgress';
+import SettingsIcon from '@mui/icons-material/Settings';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import CodeIcon from '@mui/icons-material/Code';
+import SnippetManager from './SnippetManager';
+import PackageManager from './PackageManager';
+import EditorSettings from './EditorSettings';
 
 const Notebook = (): JSX.Element => {
   const { id } = useParams<{ id: string }>();
@@ -42,6 +46,8 @@ const Notebook = (): JSX.Element => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
+  const [activeModal, setActiveModal] = useState<'snippets' | 'packages' | 'settings' | null>(null);
+  const [activeModalLanguage, setActiveModalLanguage] = useState<string>('javascript');
   
   const [cells, setCells] = useState<Cell[]>([{
     id: `cell_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
@@ -326,6 +332,9 @@ const Notebook = (): JSX.Element => {
           logs.push(`   - Empty lines: ${lines.length - processedLines}`);
           logs.push('');
           logs.push('🎯 Markdown preview updated successfully!');
+          
+          // Deselect the cell to switch to preview mode
+          setSelectedCellId(null);
           
         } catch (markdownError) {
           logs.push('');
@@ -821,7 +830,9 @@ const Notebook = (): JSX.Element => {
               type="button"
               onClick={handleExportToPDF}
               data-pdf-button
-              className={`px-4 py-2 ${theme === Theme.Dark ? 'bg-purple-600 hover:bg-purple-700' : 'bg-purple-500 hover:bg-purple-600'} text-white rounded transition-colors flex items-center gap-2`}
+              disabled={true}
+              className={`px-4 py-2 ${theme === Theme.Dark ? 'bg-purple-600' : 'bg-purple-500'} text-white rounded transition-colors flex items-center gap-2 opacity-50 cursor-not-allowed`}
+              title="PDF export is currently disabled"
             >
               <PictureAsPdfIcon />
               <span>PDF</span>
@@ -871,12 +882,14 @@ const Notebook = (): JSX.Element => {
                             `${theme === Theme.Dark ? 'border-gray-600 hover:border-gray-500' : 'border-gray-200 hover:border-gray-300'} shadow-sm`
                           } ${selectedCellId === cell.id ? `${theme === Theme.Dark ? 'ring-2 ring-blue-500 shadow-md' : 'ring-2 ring-blue-500 shadow-md'}` : ''}`}
                         >
-                          {/* Cell header */}
+                          {/* Unified Cell Header & Toolbar */}
                           <div className={`${
                             theme === Theme.Dark 
-                              ? 'bg-gray-800' 
-                              : 'bg-white'
-                          } px-4 py-3 flex justify-between items-center border-b border-gray-300/20`}>
+                              ? 'bg-gray-800 border-gray-700' 
+                              : 'bg-white border-gray-200'
+                          } px-4 py-2 flex flex-wrap justify-between items-center border-b gap-2`}>
+                            
+                            {/* Left: Info */}
                             <div className="flex items-center gap-3">
                               <span className={`text-sm font-medium ${theme === Theme.Dark ? 'text-gray-300' : 'text-gray-700'}`}>
                                 {cell.type === 'code' ? `Code (${cell.language})` : 'Markdown'}
@@ -887,46 +900,29 @@ const Notebook = (): JSX.Element => {
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-2">
-                              {cell.type === 'code' ? (
-                                <span className={`text-xs ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'} flex items-center gap-1`}>
-                                  <LightbulbIcon style={{ fontSize: 14 }} />
-                                  Cmd+Enter to run • Cmd+Shift+F to format
-                                </span>
-                              ) : (
-                                <span className={`text-xs ${theme === Theme.Dark ? 'text-gray-400' : 'text-gray-500'} flex items-center gap-1`}>
-                                  <TouchAppIcon style={{ fontSize: 14 }} />
-                                  Click cell to edit
-                                </span>
-                              )}
-                            </div>
-                          </div>
 
-                          {/* Cell toolbar */}
-                          <div className={`${theme === Theme.Dark ? 'bg-gray-700' : 'bg-gray-100'} px-4 py-2 flex justify-between items-center`}>
-                            <div className="flex items-center gap-2">
-                              {/* Empty space for alignment */}
-                            </div>
-                            <div className="flex gap-2">
+                            {/* Right: Actions */}
+                            <div className="flex flex-wrap gap-2 items-center">
                               {/* Run button for all cell types */}
                               <button 
                                 type="button"
                                 onClick={() => runCode(cell.id)}
-                                className={`text-sm ${theme === Theme.Dark ? 'text-gray-300 hover:text-white bg-gray-600 hover:bg-gray-500' : 'text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-50'} px-3 py-1 rounded border transition-colors flex items-center gap-1`}
+                                className={`text-xs ${theme === Theme.Dark ? 'text-gray-300 hover:text-white bg-gray-700 hover:bg-gray-600' : 'text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200'} px-2 py-1.5 rounded border ${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-300'} transition-colors flex items-center gap-1`}
+                                title="Run cell (Cmd+Enter)"
                               >
-                                <PlayArrowIcon fontSize="small" />
+                                <PlayArrowIcon style={{ fontSize: 16 }} />
                                 <span>Run</span>
                               </button>
                               
                               {isCodeCell(cell) && (
                                 <>
-                                  
                                   <button 
                                     type="button"
                                     onClick={() => formatCodeCell(cell.id)}
-                                    className={`text-sm ${theme === Theme.Dark ? 'text-blue-400 hover:text-blue-300 bg-gray-600 hover:bg-gray-500' : 'text-blue-500 hover:text-blue-700 bg-white hover:bg-blue-50'} px-3 py-1 rounded border transition-colors flex items-center gap-1`}
+                                    className={`text-xs ${theme === Theme.Dark ? 'text-blue-400 hover:text-blue-300 bg-gray-700 hover:bg-gray-600' : 'text-blue-600 hover:text-blue-700 bg-gray-100 hover:bg-gray-200'} px-2 py-1.5 rounded border ${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-300'} transition-colors flex items-center gap-1`}
+                                    title="Format code (Cmd+Shift+F)"
                                   >
-                                    <AutoFixHighIcon fontSize="small" />
+                                    <AutoFixHighIcon style={{ fontSize: 16 }} />
                                     <span>Format</span>
                                   </button>
 
@@ -940,27 +936,60 @@ const Notebook = (): JSX.Element => {
                                         handleContentChange(cell.id, boilerplate);
                                       }
                                     }}
-                                    className={`text-sm ${theme === Theme.Dark ? 'text-yellow-400 hover:text-yellow-300 bg-gray-600 hover:bg-gray-500' : 'text-yellow-600 hover:text-yellow-700 bg-white hover:bg-yellow-50'} px-3 py-1 rounded border transition-colors flex items-center gap-1`}
+                                    className={`text-xs ${theme === Theme.Dark ? 'text-yellow-400 hover:text-yellow-300 bg-gray-700 hover:bg-gray-600' : 'text-yellow-600 hover:text-yellow-700 bg-gray-100 hover:bg-gray-200'} px-2 py-1.5 rounded border ${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-300'} transition-colors flex items-center gap-1`}
+                                    title="Insert template code"
                                   >
-                                    <DescriptionIcon fontSize="small" />
+                                    <DescriptionIcon style={{ fontSize: 16 }} />
                                     <span>Template</span>
+                                  </button>
+
+                                  <div className={`w-px h-4 ${theme === Theme.Dark ? 'bg-gray-600' : 'bg-gray-300'} mx-1`}></div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveModalLanguage(cell.language || 'javascript');
+                                      setActiveModal('snippets');
+                                    }}
+                                    className={`text-xs ${theme === Theme.Dark ? 'text-purple-400 hover:text-purple-300 bg-gray-700 hover:bg-gray-600' : 'text-purple-600 hover:text-purple-700 bg-gray-100 hover:bg-gray-200'} px-2 py-1.5 rounded border ${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-300'} transition-colors flex items-center gap-1`}
+                                    title="Manage snippets"
+                                  >
+                                    <CodeIcon style={{ fontSize: 16 }} />
+                                    <span>Snippets</span>
                                   </button>
 
                                   <button
                                     type="button"
+                                    onClick={() => setActiveModal('packages')}
+                                    className={`text-xs ${theme === Theme.Dark ? 'text-orange-400 hover:text-orange-300 bg-gray-700 hover:bg-gray-600' : 'text-orange-600 hover:text-orange-700 bg-gray-100 hover:bg-gray-200'} px-2 py-1.5 rounded border ${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-300'} transition-colors flex items-center gap-1`}
+                                    title="Manage packages"
+                                  >
+                                    <InventoryIcon style={{ fontSize: 16 }} />
+                                    <span>Packages</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveModal('settings')}
+                                    className={`text-xs ${theme === Theme.Dark ? 'text-gray-400 hover:text-gray-300 bg-gray-700 hover:bg-gray-600' : 'text-gray-600 hover:text-gray-700 bg-gray-100 hover:bg-gray-200'} px-2 py-1.5 rounded border ${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-300'} transition-colors flex items-center gap-1`}
+                                    title="Editor settings"
+                                  >
+                                    <SettingsIcon style={{ fontSize: 16 }} />
+                                    <span>Settings</span>
+                                  </button>
+
+                                  <div className={`w-px h-4 ${theme === Theme.Dark ? 'bg-gray-600' : 'bg-gray-300'} mx-1`}></div>
+
+                                  <button
+                                    type="button"
                                     onClick={() => toggleCellCollapse(cell.id)}
-                                    className={`text-sm ${theme === Theme.Dark ? 'text-gray-300 hover:text-white bg-gray-600 hover:bg-gray-500' : 'text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-50'} px-3 py-1 rounded border transition-colors flex items-center gap-1`}
+                                    className={`text-xs ${theme === Theme.Dark ? 'text-gray-300 hover:text-white bg-gray-700 hover:bg-gray-600' : 'text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200'} px-2 py-1.5 rounded border ${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-300'} transition-colors flex items-center gap-1`}
+                                    title={cell.isCollapsed ? "Expand cell" : "Collapse cell"}
                                   >
                                     {cell.isCollapsed ? (
-                                      <>
-                                        <UnfoldMoreIcon fontSize="small" />
-                                        <span>Expand</span>
-                                      </>
+                                      <UnfoldMoreIcon style={{ fontSize: 16 }} />
                                     ) : (
-                                      <>
-                                        <UnfoldLessIcon fontSize="small" />
-                                        <span>Collapse</span>
-                                      </>
+                                      <UnfoldLessIcon style={{ fontSize: 16 }} />
                                     )}
                                   </button>
                                 </>
@@ -969,19 +998,19 @@ const Notebook = (): JSX.Element => {
                               <button 
                                 type="button"
                                 onClick={() => duplicateCell(cell.id)}
-                                className={`text-sm ${theme === Theme.Dark ? 'text-green-400 hover:text-green-300 bg-gray-600 hover:bg-gray-500' : 'text-green-600 hover:text-green-700 bg-white hover:bg-green-50'} px-3 py-1 rounded border transition-colors flex items-center gap-1`}
+                                className={`text-xs ${theme === Theme.Dark ? 'text-green-400 hover:text-green-300 bg-gray-700 hover:bg-gray-600' : 'text-green-600 hover:text-green-700 bg-gray-100 hover:bg-gray-200'} px-2 py-1.5 rounded border ${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-300'} transition-colors flex items-center gap-1`}
+                                title="Duplicate cell"
                               >
-                                <ContentCopyIcon fontSize="small" />
-                                <span>Duplicate</span>
+                                <ContentCopyIcon style={{ fontSize: 16 }} />
                               </button>
                               
                               <button 
                                 type="button"
                                 onClick={() => deleteCell(cell.id)}
-                                className={`text-sm ${theme === Theme.Dark ? 'text-red-400 hover:text-red-300 bg-gray-600 hover:bg-gray-500' : 'text-red-600 hover:text-red-700 bg-white hover:bg-red-50'} px-3 py-1 rounded border transition-colors flex items-center gap-1`}
+                                className={`text-xs ${theme === Theme.Dark ? 'text-red-400 hover:text-red-300 bg-gray-700 hover:bg-gray-600' : 'text-red-600 hover:text-red-700 bg-gray-100 hover:bg-gray-200'} px-2 py-1.5 rounded border ${theme === Theme.Dark ? 'border-gray-600' : 'border-gray-300'} transition-colors flex items-center gap-1`}
+                                title="Delete cell"
                               >
-                                <DeleteIcon fontSize="small" />
-                                <span>Delete</span>
+                                <DeleteIcon style={{ fontSize: 16 }} />
                               </button>
                             </div>
                           </div>
@@ -1049,6 +1078,23 @@ const Notebook = (): JSX.Element => {
           </Droppable>
         </DragDropContext>
       </div>
+
+      {/* Modals */}
+      <SnippetManager
+        isOpen={activeModal === 'snippets'}
+        onClose={() => setActiveModal(null)}
+        currentLanguage={activeModalLanguage}
+      />
+      
+      <PackageManager
+        isOpen={activeModal === 'packages'}
+        onClose={() => setActiveModal(null)}
+      />
+      
+      <EditorSettings
+        isOpen={activeModal === 'settings'}
+        onClose={() => setActiveModal(null)}
+      />
     </div>
   );
 };
